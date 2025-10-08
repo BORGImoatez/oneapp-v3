@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mgi/services/storage_service.dart';
+import 'package:mgi/utils/constants.dart';
 import 'package:provider/provider.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -8,6 +10,9 @@ import '../../models/document_model.dart';
 import '../../services/document_service.dart';
 import 'folder_permissions_screen.dart';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
+
 
 class FilesScreen extends StatefulWidget {
   const FilesScreen({super.key});
@@ -950,39 +955,171 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  void _downloadDocument(DocumentModel document) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.download, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('Téléchargement de ${document.originalFilename}...'),
-            ),
-          ],
+  // Remplacez les fonctions _downloadDocument et _previewDocument (lignes 953-985) par ce code :
+
+  void _downloadDocument(DocumentModel document) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Téléchargement de ${document.originalFilename}...'),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
+      );
+
+      final token = await StorageService.getToken();
+      final url = '${Constants.baseUrl}/files/download/${document.storedFilename}';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final dir = Directory('/storage/emulated/0/Download');
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+
+        final file = File('${dir.path}/${document.originalFilename}');
+        await file.writeAsBytes(response.bodyBytes);
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('${document.originalFilename} téléchargé avec succès'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Ouvrir',
+              textColor: Colors.white,
+              onPressed: () {
+                OpenFilex.open(file.path);
+              },
+            ),
+          ),
+        );
+      } else {
+        throw Exception('Erreur lors du téléchargement');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Erreur: ${e.toString()}'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _previewDocument(DocumentModel document) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.visibility, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text('Aperçu de ${document.originalFilename}'),
-            ),
-          ],
+  void _previewDocument(DocumentModel document) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 2,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Ouverture de ${document.originalFilename}...'),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.primaryColor,
+          duration: const Duration(seconds: 2),
         ),
-        backgroundColor: AppTheme.primaryColor,
-      ),
-    );
+      );
+
+      final token = await StorageService.getToken();
+      final url = '${Constants.baseUrl}/files/download/${document.storedFilename}';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final tempDir = Directory.systemTemp;
+        final file = File('${tempDir.path}/${document.originalFilename}');
+        await file.writeAsBytes(response.bodyBytes);
+
+        final result = await OpenFilex.open(file.path);
+
+        if (!mounted) return;
+
+        if (result.type != ResultType.done) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Impossible d\'ouvrir ce type de fichier'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Erreur lors de l\'ouverture du fichier');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Erreur: ${e.toString()}'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
+
 
   void _showSearchDialog(DocumentProvider provider) {
     final searchController = TextEditingController();
