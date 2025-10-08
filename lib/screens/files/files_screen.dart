@@ -12,6 +12,8 @@ import 'folder_permissions_screen.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class FilesScreen extends StatefulWidget {
@@ -955,7 +957,26 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  // Remplacez les fonctions _downloadDocument et _previewDocument (lignes 953-985) par ce code :
+  Future<bool> _requestStoragePermission() async {
+    if (Platform.isAndroid) {
+      if (await Permission.storage.isGranted) {
+        return true;
+      }
+
+      final androidInfo = await Permission.storage.request();
+      if (androidInfo.isGranted) {
+        return true;
+      }
+
+      if (await Permission.manageExternalStorage.isGranted) {
+        return true;
+      }
+
+      final manageStorage = await Permission.manageExternalStorage.request();
+      return manageStorage.isGranted;
+    }
+    return true;
+  }
 
   void _downloadDocument(DocumentModel document) async {
     try {
@@ -963,9 +984,13 @@ class _FilesScreenState extends State<FilesScreen> {
         SnackBar(
           content: Row(
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 2,
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -978,8 +1003,17 @@ class _FilesScreenState extends State<FilesScreen> {
         ),
       );
 
+      final hasPermission = await _requestStoragePermission();
+      if (!hasPermission) {
+        throw Exception('Permission de stockage refusée');
+      }
+
       final token = await StorageService.getToken();
-      final url = '${Constants.baseUrl}/files/download/${document.storedFilename}';
+      if (token == null) {
+        throw Exception('Token d\'authentification manquant');
+      }
+
+      final url = '${Constants.baseUrl}/documents/${document.id}/download';
 
       final response = await http.get(
         Uri.parse(url),
@@ -989,9 +1023,18 @@ class _FilesScreenState extends State<FilesScreen> {
       );
 
       if (response.statusCode == 200) {
-        final dir = Directory('/storage/emulated/0/Download');
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
+        Directory? dir;
+        if (Platform.isAndroid) {
+          dir = Directory('/storage/emulated/0/Download');
+          if (!await dir.exists()) {
+            dir = await getExternalStorageDirectory();
+          }
+        } else {
+          dir = await getApplicationDocumentsDirectory();
+        }
+
+        if (dir == null) {
+          throw Exception('Impossible de trouver le répertoire de téléchargement');
         }
 
         final file = File('${dir.path}/${document.originalFilename}');
@@ -1006,7 +1049,7 @@ class _FilesScreenState extends State<FilesScreen> {
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text('${document.originalFilename} téléchargé avec succès'),
+                  child: Text('${document.originalFilename} téléchargé'),
                 ),
               ],
             ),
@@ -1020,8 +1063,12 @@ class _FilesScreenState extends State<FilesScreen> {
             ),
           ),
         );
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expirée. Veuillez vous reconnecter');
+      } else if (response.statusCode == 404) {
+        throw Exception('Fichier introuvable sur le serveur');
       } else {
-        throw Exception('Erreur lors du téléchargement');
+        throw Exception('Erreur ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       if (!mounted) return;
@@ -1032,11 +1079,12 @@ class _FilesScreenState extends State<FilesScreen> {
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('Erreur: ${e.toString()}'),
+                child: Text('Erreur lors du téléchargement: ${e.toString()}'),
               ),
             ],
           ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -1048,9 +1096,13 @@ class _FilesScreenState extends State<FilesScreen> {
         SnackBar(
           content: Row(
             children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 2,
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1064,7 +1116,11 @@ class _FilesScreenState extends State<FilesScreen> {
       );
 
       final token = await StorageService.getToken();
-      final url = '${Constants.baseUrl}/files/download/${document.storedFilename}';
+      if (token == null) {
+        throw Exception('Token d\'authentification manquant');
+      }
+
+      final url = '${Constants.baseUrl}/documents/${document.id}/download';
 
       final response = await http.get(
         Uri.parse(url),
@@ -1074,7 +1130,7 @@ class _FilesScreenState extends State<FilesScreen> {
       );
 
       if (response.statusCode == 200) {
-        final tempDir = Directory.systemTemp;
+        final tempDir = await getTemporaryDirectory();
         final file = File('${tempDir.path}/${document.originalFilename}');
         await file.writeAsBytes(response.bodyBytes);
 
@@ -1090,16 +1146,21 @@ class _FilesScreenState extends State<FilesScreen> {
                   const Icon(Icons.warning, color: Colors.white),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('Impossible d\'ouvrir ce type de fichier'),
+                    child: Text('Impossible d\'ouvrir ce type de fichier: ${result.message}'),
                   ),
                 ],
               ),
               backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
             ),
           );
         }
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expirée. Veuillez vous reconnecter');
+      } else if (response.statusCode == 404) {
+        throw Exception('Fichier introuvable sur le serveur');
       } else {
-        throw Exception('Erreur lors de l\'ouverture du fichier');
+        throw Exception('Erreur ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       if (!mounted) return;
@@ -1110,11 +1171,12 @@ class _FilesScreenState extends State<FilesScreen> {
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('Erreur: ${e.toString()}'),
+                child: Text('Erreur lors de l\'ouverture: ${e.toString()}'),
               ),
             ],
           ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
