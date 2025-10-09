@@ -22,6 +22,8 @@ public class FCMService {
     @Value("${firebase.config.path:#{null}}")
     private String firebaseConfigPath;
 
+    private boolean firebaseInitialized = false;
+
     @PostConstruct
     public void initialize() {
         try {
@@ -34,17 +36,37 @@ public class FCMService {
 
                 if (FirebaseApp.getApps().isEmpty()) {
                     FirebaseApp.initializeApp(options);
+                    firebaseInitialized = true;
                     log.info("Firebase initialized successfully");
+                } else {
+                    firebaseInitialized = true;
+                    log.info("Firebase already initialized");
                 }
             } else {
                 log.warn("Firebase config path not set. Push notifications will not work.");
+                log.warn("Please set firebase.config.path in application.properties");
             }
         } catch (IOException e) {
             log.error("Error initializing Firebase: {}", e.getMessage(), e);
+            log.error("Please verify the firebase.config.path in application.properties points to a valid service account JSON file");
+        } catch (Exception e) {
+            log.error("Unexpected error initializing Firebase: {}", e.getMessage(), e);
         }
     }
 
+    private boolean isFirebaseAvailable() {
+        if (!firebaseInitialized) {
+            log.warn("Firebase is not initialized. Notifications cannot be sent.");
+            return false;
+        }
+        return true;
+    }
+
     public void sendNotificationToToken(String fcmToken, String title, String body, String channelId) {
+        if (!isFirebaseAvailable()) {
+            return;
+        }
+
         if (fcmToken == null || fcmToken.isEmpty()) {
             log.warn("FCM token is empty, skipping notification");
             return;
@@ -81,6 +103,10 @@ public class FCMService {
     }
 
     public void sendNotificationToMultipleTokens(List<String> fcmTokens, String title, String body, String channelId) {
+        if (!isFirebaseAvailable()) {
+            return;
+        }
+
         if (fcmTokens == null || fcmTokens.isEmpty()) {
             log.warn("FCM tokens list is empty, skipping notifications");
             return;
