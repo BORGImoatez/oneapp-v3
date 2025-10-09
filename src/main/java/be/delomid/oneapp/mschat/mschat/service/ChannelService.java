@@ -35,6 +35,7 @@ public class ChannelService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
+    private final FCMService fcmService;
 
     @Transactional
     public ChannelDto createChannel(CreateChannelRequest request, String createdBy) {
@@ -75,6 +76,9 @@ public class ChannelService {
                 }
             }
         }
+
+        // Envoyer des notifications push à tous les résidents de l'immeuble
+        sendChannelCreationNotifications(channel, createdBy, request.getBuildingId());
 
         return convertToDto(channel);
     }
@@ -616,5 +620,44 @@ public class ChannelService {
 
         return builder.build();
 
+    }
+
+    private void sendChannelCreationNotifications(Channel channel, String creatorId, String buildingId) {
+        try {
+            Resident creator = residentRepository.findByEmail(creatorId)
+                    .or(() -> residentRepository.findById(creatorId))
+                    .orElse(null);
+
+            if (creator == null) {
+                log.warn("Creator not found: {}", creatorId);
+                return;
+            }
+
+            String creatorName = creator.getFname() + " " + creator.getLname();
+            String notificationTitle = "Nouveau canal créé";
+            String notificationBody = creatorName + " a créé un canal pour le sujet : " + channel.getName();
+
+            List<ResidentBuilding> buildingResidents = residentBuildingRepository.findActiveByBuildingId(buildingId);
+            List<String> fcmTokens = buildingResidents.stream()
+                    .map(ResidentBuilding::getResident)
+                    .filter(resident -> !resident.getIdUsers().equals(creator.getIdUsers()))
+                    .map(Resident::getFcmToken)
+                    .filter(token -> token != null && !token.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (!fcmTokens.isEmpty()) {
+                fcmService.sendNotificationToMultipleTokens(
+                        fcmTokens,
+                        notificationTitle,
+                        notificationBody,
+                        String.valueOf(channel.getId())
+                );
+                log.info("Sent {} notifications for channel creation", fcmTokens.size());
+            } else {
+                log.info("No FCM tokens found for building residents");
+            }
+        } catch (Exception e) {
+            log.error("Error sending channel creation notifications: {}", e.getMessage(), e);
+        }
     }
 }

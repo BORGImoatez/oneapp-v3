@@ -100,6 +100,18 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  Future<void> updateFcmToken(String fcmToken) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/update-fcm-token'),
+      headers: await _getHeaders(),
+      body: jsonEncode({
+        'fcmToken': fcmToken,
+      }),
+    );
+
+    _handleVoidResponse(response);
+  }
+
   // Channel endpoints
   Future<Map<String, dynamic>> getChannels({int page = 0, int size = 20}) async {
     final token = await StorageService.getToken();

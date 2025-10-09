@@ -43,4 +43,10 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(refreshToken);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/update-fcm-token")
+    public ResponseEntity<?> updateFcmToken(@Valid @RequestBody UpdateFcmTokenRequest request) {
+        authService.updateFcmToken(request);
+        return ResponseEntity.ok().body("FCM token updated successfully");
+    }
 }

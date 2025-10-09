@@ -269,4 +269,17 @@ public class AuthService {
 
         throw new IllegalArgumentException("Token de rafraîchissement invalide");
     }
+
+    @Transactional
+    public void updateFcmToken(UpdateFcmTokenRequest request) {
+        String email = jwtConfig.extractUsernameFromCurrentContext();
+
+        Resident resident = residentRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
+
+        resident.setFcmToken(request.getFcmToken());
+        residentRepository.save(resident);
+
+        log.info("FCM token updated for user: {}", email);
+    }
 }

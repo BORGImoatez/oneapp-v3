@@ -4,6 +4,8 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -100,5 +102,13 @@ public class JwtConfig {
 
     public String extractBuildingId(String token) {
         return extractClaim(token, claims -> claims.get("buildingId", String.class));
+    }
+
+    public String extractUsernameFromCurrentContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getName();
+        }
+        throw new IllegalStateException("No authenticated user found in context");
     }
 }

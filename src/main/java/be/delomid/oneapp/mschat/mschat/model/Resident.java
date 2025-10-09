@@ -62,6 +62,9 @@ public class Resident implements UserDetails {
     @Column(name = "managed_building_group_id")
     private String managedBuildingGroupId;
 
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @Builder.Default
     @Column(name = "is_account_non_expired")
     private Boolean isAccountNonExpired = true;
