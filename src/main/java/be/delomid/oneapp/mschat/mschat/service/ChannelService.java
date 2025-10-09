@@ -46,12 +46,12 @@ public class ChannelService {
                 request.getType() == ChannelType.BUILDING_GROUP ||
                 request.getType() == ChannelType.PUBLIC) {
             // Seuls les admins peuvent créer ces types de canaux
-            validateAdminAccess(createdBy);
+            validateAdminAccess(createdBy,request.getBuildingId());
         }
 
         // Vérifications spécifiques selon le type de canal
         validateChannelCreation(request, createdBy);
-
+        log.info("ahla:{}", request.getBuildingId());
         Channel channel = Channel.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -287,11 +287,11 @@ public class ChannelService {
         List<Resident> residents = residentBuildings.stream()
                 .map(ResidentBuilding::getResident)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         log.debug("Found {} residents in building {}", residents.size(), currentBuildingId);
 
-        return residents.stream()
+        return residentBuildings.stream()
                 .map(this::convertResidentToDto)
                 .collect(Collectors.toList());
     }
@@ -456,15 +456,21 @@ public class ChannelService {
         }
     }
 
-    private void validateAdminAccess(String userId) {
+    private void validateAdminAccess(String userId,String buildingId) {
         Resident user = residentRepository.findByEmail(userId)
                 .or(() -> residentRepository.findById(userId))
                 .orElseThrow(() -> new UnauthorizedAccessException("User not found"));
+        Optional<ResidentBuilding> residentBuilding = residentBuildingRepository.findByResidentEmailAndBuildingId(userId,buildingId);
+        residentBuilding.ifPresent(building -> log.info("user aaa" + building.getRoleInBuilding()));
 
-        if (user.getRole() != UserRole.BUILDING_ADMIN &&
-                user.getRole() != UserRole.GROUP_ADMIN &&
-                user.getRole() != UserRole.SUPER_ADMIN) {
+        if (residentBuilding.isPresent()) {
+
+
+        if (residentBuilding.get().getRoleInBuilding() != UserRole.BUILDING_ADMIN &&
+                residentBuilding.get().getRoleInBuilding()  != UserRole.GROUP_ADMIN &&
+                residentBuilding.get().getRoleInBuilding()  != UserRole.SUPER_ADMIN) {
             throw new UnauthorizedAccessException("Only admins can create this type of channel");
+        }
         }
     }
 
@@ -483,8 +489,10 @@ public class ChannelService {
                 .findByChannelIdAndUserId(channelId, user.getIdUsers())
                 .orElseThrow(() -> new UnauthorizedAccessException("User is not a member of this channel"));
 
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN &&
-                user.getRole() != UserRole.BUILDING_ADMIN) {
+//        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN &&
+//                user.getRole() != UserRole.BUILDING_ADMIN)
+//
+                 if (member.getRole() != MemberRole.OWNER){
             throw new UnauthorizedAccessException("User does not have admin access to this channel");
         }
     }
@@ -587,32 +595,26 @@ public class ChannelService {
                 .build();
     }
 
-    private ResidentDto convertResidentToDto(Resident resident) {
-        String apartmentId = null;
-        String buildingId = null;
+    private ResidentDto convertResidentToDto(ResidentBuilding resident) {
 
-        try {
-            if (resident.getApartment() != null) {
-                apartmentId = resident.getApartment().getIdApartment();
-                if (resident.getApartment().getBuilding() != null) {
-                    buildingId = resident.getApartment().getBuilding().getBuildingId();
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error accessing apartment/building for resident {}: {}", resident.getIdUsers(), e.getMessage());
+
+
+        ResidentDto.ResidentDtoBuilder builder = ResidentDto.builder()
+                .idUsers(resident.getResident().getIdUsers())
+                .fname(resident.getResident().getFname())
+                .lname(resident.getResident().getLname())
+                .email(resident.getResident().getEmail())
+                .phoneNumber(resident.getResident().getPhoneNumber())
+                .picture(resident.getResident().getPicture())
+                .buildingId(resident.getBuilding().getBuildingId())
+                .createdAt(resident.getResident().getCreatedAt())
+                .updatedAt(resident.getResident().getUpdatedAt());
+
+        if (resident.getApartment() != null) {
+            builder.apartmentId(resident.getApartment().getIdApartment());
         }
 
-        return ResidentDto.builder()
-                .idUsers(resident.getIdUsers())
-                .fname(resident.getFname())
-                .lname(resident.getLname())
-                .email(resident.getEmail())
-                .phoneNumber(resident.getPhoneNumber())
-                .picture(resident.getPicture())
-                .apartmentId(apartmentId)
-                .buildingId(buildingId)
-                .createdAt(resident.getCreatedAt())
-                .updatedAt(resident.getUpdatedAt())
-                .build();
+        return builder.build();
+
     }
 }

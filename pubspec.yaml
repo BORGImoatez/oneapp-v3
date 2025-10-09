@@ -22,7 +22,8 @@ dependencies:
    # HTTP & API
   http: ^1.1.0
   dio: ^5.3.2
-  
+  firebase_core: ^4.1.1
+  firebase_messaging: ^16.0.2
   # WebSocket
   socket_io_client: ^2.0.3+1
   web_socket_channel: ^2.4.0
@@ -61,7 +62,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
 
   
   fonts:

@@ -957,6 +957,7 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
+  // Remplacez les fonctions _downloadDocument et _previewDocument (lignes 953-985) par ce code :
   Future<bool> _requestStoragePermission() async {
     if (Platform.isAndroid) {
       if (await Permission.storage.isGranted) {

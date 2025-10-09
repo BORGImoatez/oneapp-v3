@@ -144,7 +144,7 @@ class ChannelProvider with ChangeNotifier {
       _buildingResidents = residentsList
           .map((json) => User.fromJson(json))
           .toList();
-
+  print(_buildingResidents.length);
       // Filtrer pour s'assurer qu'on n'a que les résidents du bâtiment actuel
       if (currentBuildingId != null) {
         _buildingResidents = _buildingResidents

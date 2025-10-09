@@ -1,4 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:mgi/firebase_options.dart';
+import 'package:mgi/services/notification_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -20,8 +24,13 @@ import 'utils/app_theme.dart';
 import 'utils/constants.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
 
+  WidgetsFlutterBinding.ensureInitialized();
+await Firebase.initializeApp(
+  options: DefaultFirebaseOptions.currentPlatform,
+);
+await NotificationService().initFcm();
+ FirebaseMessaging.onBackgroundMessage(handleBackgroundMessage);
   // Initialize services
   await StorageService.init();
   await BuildingContextService().loadBuildingContext();
@@ -70,4 +79,8 @@ class MGIApp extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> handleBackgroundMessage(RemoteMessage message) async {
+  print('Message: $message.notification?.title');
 }

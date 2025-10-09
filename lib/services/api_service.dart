@@ -254,7 +254,7 @@ class ApiService {
   Future<List<dynamic>> getBuildingResidents(String buildingId) async {
     final token = await StorageService.getToken();
     print('DEBUG: Making API call to get building residents for: $buildingId with token: ${token?.substring(0, 20)}...');
-
+  print(buildingId);
     // Si buildingId est "current", utiliser l'endpoint spécial
     final endpoint = buildingId == "current"
         ? '$baseUrl/channels/current-building/residents'

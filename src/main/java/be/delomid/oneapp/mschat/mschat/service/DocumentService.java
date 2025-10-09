@@ -574,7 +574,7 @@ public class DocumentService {
         }
     }
 
-    public Document getDocumentForDownload(Long documentId, String email) {
+    public byte[] downloadDocument(Long documentId, String email) throws IOException {
         Resident resident = residentRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Résident non trouvé"));
 
@@ -600,21 +600,14 @@ public class DocumentService {
             throw new RuntimeException("Accès non autorisé à ce document");
         }
 
-        log.info("Téléchargement du document: {} (ID: {}) pour immeuble: {}",
-                document.getOriginalFilename(), documentId, buildingId);
-
-        return document;
-    }
-
-    public byte[] downloadDocument(Long documentId, String email) throws IOException {
-        Document document = getDocumentForDownload(documentId, email);
-
         Path filePath = Paths.get(baseDocumentsDir, document.getFilePath());
         if (!Files.exists(filePath)) {
             log.error("Fichier physique non trouvé: {}", filePath.toAbsolutePath());
             throw new RuntimeException("Fichier non trouvé sur le système de fichiers");
         }
 
+        log.info("Téléchargement du document: {} (ID: {}) pour immeuble: {}",
+                document.getOriginalFilename(), documentId, buildingId);
         return Files.readAllBytes(filePath);
     }
 

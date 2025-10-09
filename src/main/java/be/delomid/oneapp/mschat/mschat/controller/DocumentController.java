@@ -177,18 +177,11 @@ public class DocumentController {
         try {
             String email = getUserEmail(authentication);
             log.info("Téléchargement du document {} par utilisateur: {}", documentId, email);
-
-            var document = documentService.getDocumentForDownload(documentId, email);
             byte[] fileContent = documentService.downloadDocument(documentId, email);
 
-            String contentType = document.getMimeType();
-            if (contentType == null || contentType.isEmpty()) {
-                contentType = "application/octet-stream";
-            }
-
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getOriginalFilename() + "\"")
-                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(fileContent);
         } catch (IOException e) {
             log.error("Échec du téléchargement du document: {}", e.getMessage());
@@ -206,18 +199,11 @@ public class DocumentController {
         try {
             String email = getUserEmail(authentication);
             log.info("Aperçu du document {} par utilisateur: {}", documentId, email);
-
-            var document = documentService.getDocumentForDownload(documentId, email);
             byte[] fileContent = documentService.downloadDocument(documentId, email);
 
-            String contentType = document.getMimeType();
-            if (contentType == null || contentType.isEmpty()) {
-                contentType = "application/octet-stream";
-            }
-
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + document.getOriginalFilename() + "\"")
-                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(fileContent);
         } catch (IOException e) {
             log.error("Échec de l'aperçu du document: {}", e.getMessage());

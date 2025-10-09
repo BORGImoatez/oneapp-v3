@@ -25,6 +25,8 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
   int _currentPage = 0;
   final int _itemsPerPage = 6;
 
+  final Map<String, bool> _expandedCards = {};
+
   @override
   void initState() {
     super.initState();
@@ -136,47 +138,51 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
 
               Center(
                 child: Column(
                   children: [
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         color: AppTheme.primaryColor,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Icon(
                         Icons.apartment,
-                        size: 40,
+                        size: 35,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     const Text(
                       'Sélectionner un immeuble',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Choisissez l\'immeuble pour cette session',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppTheme.textSecondary,
+                    const SizedBox(height: 6),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        'Choisissez l\'immeuble pour cette session',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
 
               Container(
                 decoration: BoxDecoration(
@@ -346,17 +352,25 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
     }
 
     if (_isGridView) {
-      return GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.75,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: _paginatedBuildings.length,
-        itemBuilder: (context, index) {
-          final building = _paginatedBuildings[index];
-          return _buildBuildingGridCard(building);
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+          final itemWidth = (constraints.maxWidth - (crossAxisCount - 1) * 12) / crossAxisCount;
+          final itemHeight = itemWidth * 1.5;
+
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: itemWidth / itemHeight,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _paginatedBuildings.length,
+            itemBuilder: (context, index) {
+              final building = _paginatedBuildings[index];
+              return _buildBuildingGridCard(building);
+            },
+          );
         },
       );
     } else {
@@ -408,6 +422,12 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
   }
 
   Widget _buildBuildingGridCard(BuildingSelection building) {
+    final isExpanded = _expandedCards[building.buildingId] ?? false;
+    final fullAddress = building.address != null
+        ? '${building.address!.address}, ${building.address!.ville} ${building.address!.codePostal}'
+        : '';
+    final shortAddress = fullAddress.length > 30 ? '${fullAddress.substring(0, 30)}...' : fullAddress;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -417,104 +437,116 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
         onTap: () => _selectBuilding(building),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: _getRoleColor(building.roleInBuilding).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: building.buildingPicture != null
-                        ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        building.buildingPicture!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.apartment,
-                            size: 40,
-                            color: _getRoleColor(building.roleInBuilding),
-                          );
-                        },
-                      ),
-                    )
-                        : Icon(
-                      Icons.apartment,
-                      size: 40,
-                      color: _getRoleColor(building.roleInBuilding),
-                    ),
+              Container(
+                width: double.infinity,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: _getRoleColor(building.roleInBuilding).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: building.buildingPicture != null
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    building.buildingPicture!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.apartment,
+                        size: 30,
+                        color: _getRoleColor(building.roleInBuilding),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    building.buildingLabel,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if (building.address != null)
-                    Text(
-                      '${building.address!.address}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  const SizedBox(height: 4),
-                  if (building.address != null)
-                    Text(
-                      '${building.address!.ville} ${building.address!.codePostal}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+                )
+                    : Icon(
+                  Icons.apartment,
+                  size: 30,
+                  color: _getRoleColor(building.roleInBuilding),
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildRoleChip(building.roleInBuilding),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _selectBuilding(building),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _getRoleColor(building.roleInBuilding),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Sélectionner',
+              const SizedBox(height: 8),
+              Text(
+                building.buildingLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              if (building.address != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 12,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        isExpanded ? fullAddress : shortAddress,
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          fontSize: 10,
+                          color: Colors.grey[600],
                         ),
+                        maxLines: isExpanded ? null : 2,
+                      ),
+                    ),
+                  ],
+                ),
+                if (fullAddress.length > 30) ...[
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _expandedCards[building.buildingId] = !isExpanded;
+                      });
+                    },
+                    child: Text(
+                      isExpanded ? 'Voir moins' : 'Voir plus',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: _getRoleColor(building.roleInBuilding),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ],
+                const SizedBox(height: 8),
+              ],
+              _buildRoleChip(building.roleInBuilding),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 32,
+                child: ElevatedButton(
+                  onPressed: () => _selectBuilding(building),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _getRoleColor(building.roleInBuilding),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sélectionner',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -525,7 +557,7 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
 
   Widget _buildBuildingCard(BuildingSelection building) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -534,29 +566,31 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
         onTap: () => _selectBuilding(building),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 55,
+                    height: 55,
                     decoration: BoxDecoration(
                       color: _getRoleColor(building.roleInBuilding).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: building.buildingPicture != null
                         ? ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(12),
                       child: Image.network(
                         building.buildingPicture!,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.apartment,
-                            size: 30,
+                            size: 28,
                             color: _getRoleColor(building.roleInBuilding),
                           );
                         },
@@ -564,11 +598,11 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                     )
                         : Icon(
                       Icons.apartment,
-                      size: 30,
+                      size: 28,
                       color: _getRoleColor(building.roleInBuilding),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,16 +610,18 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                         Text(
                           building.buildingLabel,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (building.buildingNumber != null)
                           Text(
                             'N° ${building.buildingNumber}',
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 13,
                               color: AppTheme.textSecondary,
                             ),
                           ),
@@ -596,29 +632,32 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               if (building.address != null) ...[
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
                       Icons.location_on,
-                      size: 16,
+                      size: 14,
                       color: Colors.grey[600],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         '${building.address!.address}, ${building.address!.ville} ${building.address!.codePostal}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.grey[600],
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
               ],
 
               if (building.apartmentId != null) ...[
@@ -626,27 +665,21 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                   children: [
                     Icon(
                       Icons.home,
-                      size: 16,
+                      size: 14,
                       color: Colors.grey[600],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Appartement ${building.apartmentNumber ?? building.apartmentId}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    if (building.apartmentFloor != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '• Étage ${building.apartmentFloor}',
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Appartement ${building.apartmentNumber ?? building.apartmentId}${building.apartmentFloor != null ? ' • Étage ${building.apartmentFloor}' : ''}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.grey[600],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ] else if (building.roleInBuilding == 'BUILDING_ADMIN') ...[
@@ -654,14 +687,14 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                   children: [
                     Icon(
                       Icons.admin_panel_settings,
-                      size: 16,
+                      size: 14,
                       color: Colors.grey[600],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Text(
                       'Administrateur de l\'immeuble',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -669,7 +702,7 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                 ),
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               SizedBox(
                 width: double.infinity,
@@ -685,7 +718,7 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
                   child: const Text(
                     'Sélectionner',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -704,15 +737,15 @@ class _BuildingSelectionScreenState extends State<BuildingSelectionScreen> {
     String label = _getRoleLabel(role);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
           color: color,
         ),

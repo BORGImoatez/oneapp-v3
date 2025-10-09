@@ -70,6 +70,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
       }
 
       final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      final currentBuildingId = BuildingContextService().currentBuildingId;
 
       final channelData = {
         'name': _nameController.text.trim(),
@@ -77,6 +78,7 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
         'type': 'GROUP',
         'isPrivate': _isPrivate,
         'memberIds': _selectedMembers.map((user) => user.id).toList(),
+        'buildingId':currentBuildingId
       };
 
       final channel = await channelProvider.createChannel(channelData);
