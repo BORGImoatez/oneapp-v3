@@ -26,7 +26,7 @@ public class NotificationService {
     private final ChannelRepository channelRepository;
 
     @Transactional
-    public Notification createNotification(Long residentId, Long buildingId, String title, String body,
+    public Notification createNotification(String residentId, String buildingId, String title, String body,
                                           String type, Long channelId, Long voteId, Long documentId) {
         Resident resident = residentRepository.findById(residentId)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
@@ -55,26 +55,26 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    public List<NotificationDto> getNotificationsForResident(Long residentId) {
-        List<Notification> notifications = notificationRepository.findByResidentIdOrderByCreatedAtDesc(residentId);
+    public List<NotificationDto> getNotificationsForResident(String residentId) {
+        List<Notification> notifications = notificationRepository.findByResidentIdUsersOrderByCreatedAtDesc(residentId);
         return notifications.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    public List<NotificationDto> getNotificationsForResidentAndBuilding(Long residentId, Long buildingId) {
+    public List<NotificationDto> getNotificationsForResidentAndBuilding(String residentId, String buildingId) {
         List<Notification> notifications = notificationRepository
-                .findByResidentIdAndBuildingIdOrderByCreatedAtDesc(residentId, buildingId);
+                .findByResidentIdUsersAndBuildingBuildingIdOrderByCreatedAtDesc(residentId, buildingId);
         return notifications.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }
 
-    public Long getUnreadCount(Long residentId) {
+    public Long getUnreadCount(String residentId) {
         return notificationRepository.countUnreadByResidentId(residentId);
     }
 
-    public Long getUnreadCountForBuilding(Long residentId, Long buildingId) {
+    public Long getUnreadCountForBuilding(String residentId, String buildingId) {
         return notificationRepository.countUnreadByResidentIdAndBuildingId(residentId, buildingId);
     }
 
@@ -84,15 +84,15 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAllAsRead(Long residentId) {
+    public void markAllAsRead(String residentId) {
         notificationRepository.markAllAsReadForResident(residentId);
     }
 
     private NotificationDto toDto(Notification notification) {
         return NotificationDto.builder()
                 .id(notification.getId())
-                .residentId(notification.getResident().getId())
-                .buildingId(notification.getBuilding().getId())
+                .residentId(notification.getResident().getIdUsers())
+                .buildingId(notification.getBuilding().getBuildingId())
                 .title(notification.getTitle())
                 .body(notification.getBody())
                 .type(notification.getType())

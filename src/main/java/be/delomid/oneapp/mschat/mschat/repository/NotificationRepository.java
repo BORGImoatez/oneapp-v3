@@ -12,21 +12,21 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findByResidentIdOrderByCreatedAtDesc(Long residentId);
+    List<Notification> findByResidentIdUsersOrderByCreatedAtDesc(String residentId);
 
-    List<Notification> findByResidentIdAndBuildingIdOrderByCreatedAtDesc(Long residentId, Long buildingId);
+    List<Notification> findByResidentIdUsersAndBuildingBuildingIdOrderByCreatedAtDesc(String residentId, String buildingId);
 
-    @Query("SELECT COUNT(n) FROM Notification n WHERE n.resident.id = :residentId AND n.isRead = false")
-    Long countUnreadByResidentId(@Param("residentId") Long residentId);
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.resident.idUsers = :residentId AND n.isRead = false")
+    Long countUnreadByResidentId(@Param("residentId") String residentId);
 
-    @Query("SELECT COUNT(n) FROM Notification n WHERE n.resident.id = :residentId AND n.building.id = :buildingId AND n.isRead = false")
-    Long countUnreadByResidentIdAndBuildingId(@Param("residentId") Long residentId, @Param("buildingId") Long buildingId);
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.resident.idUsers = :residentId AND n.building.buildingId = :buildingId AND n.isRead = false")
+    Long countUnreadByResidentIdAndBuildingId(@Param("residentId") String residentId, @Param("buildingId") String buildingId);
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE n.id = :notificationId")
     void markAsRead(@Param("notificationId") Long notificationId);
 
     @Modifying
-    @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE n.resident.id = :residentId AND n.isRead = false")
-    void markAllAsReadForResident(@Param("residentId") Long residentId);
+    @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE n.resident.idUsers = :residentId AND n.isRead = false")
+    void markAllAsReadForResident(@Param("residentId") String residentId);
 }

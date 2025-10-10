@@ -2,8 +2,8 @@
 
 CREATE TABLE IF NOT EXISTS notifications (
     id BIGSERIAL PRIMARY KEY,
-    resident_id BIGINT NOT NULL,
-    building_id BIGINT NOT NULL,
+    resident_id VARCHAR(255) NOT NULL,
+    building_id VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     body TEXT NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     read_at TIMESTAMP,
 
     CONSTRAINT fk_notifications_resident
-        FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE CASCADE,
+        FOREIGN KEY (resident_id) REFERENCES residents(id_users) ON DELETE CASCADE,
     CONSTRAINT fk_notifications_building
-        FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE,
+        FOREIGN KEY (building_id) REFERENCES buildings(building_id) ON DELETE CASCADE,
     CONSTRAINT fk_notifications_channel
         FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 );

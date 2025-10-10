@@ -19,7 +19,7 @@ class NotificationApiService {
     }
   }
 
-  Future<List<NotificationModel>> getNotificationsByBuilding(int buildingId) async {
+  Future<List<NotificationModel>> getNotificationsByBuilding(String buildingId) async {
     try {
       final response = await _apiService.get('/notifications/building/$buildingId');
       final List<dynamic> data = json.decode(response.body);
@@ -41,7 +41,7 @@ class NotificationApiService {
     }
   }
 
-  Future<int> getUnreadCountByBuilding(int buildingId) async {
+  Future<int> getUnreadCountByBuilding(String buildingId) async {
     try {
       final response = await _apiService.get('/notifications/unread-count/building/$buildingId');
       final data = json.decode(response.body);

@@ -1,7 +1,7 @@
 class NotificationModel {
   final int id;
-  final int residentId;
-  final int buildingId;
+  final String residentId;
+  final String buildingId;
   final String title;
   final String body;
   final String type;
@@ -30,8 +30,8 @@ class NotificationModel {
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as int,
-      residentId: json['residentId'] as int,
-      buildingId: json['buildingId'] as int,
+      residentId: json['residentId'] as String,
+      buildingId: json['buildingId'] as String,
       title: json['title'] as String,
       body: json['body'] as String,
       type: json['type'] as String,

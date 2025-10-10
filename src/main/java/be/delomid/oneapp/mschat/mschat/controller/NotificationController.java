@@ -28,7 +28,7 @@ public class NotificationController {
     @Operation(summary = "Récupérer toutes les notifications de l'utilisateur connecté")
     public ResponseEntity<List<NotificationDto>> getMyNotifications() {
         String userEmail = SecurityContextUtil.getCurrentUserEmail();
-        Long residentId = SecurityContextUtil.getCurrentUserId();
+        String residentId = SecurityContextUtil.getCurrentUserId();
         log.debug("Getting notifications for user: {}", userEmail);
 
         List<NotificationDto> notifications = notificationService.getNotificationsForResident(residentId);
@@ -37,9 +37,9 @@ public class NotificationController {
 
     @GetMapping("/building/{buildingId}")
     @Operation(summary = "Récupérer les notifications d'un bâtiment spécifique")
-    public ResponseEntity<List<NotificationDto>> getNotificationsByBuilding(@PathVariable Long buildingId) {
+    public ResponseEntity<List<NotificationDto>> getNotificationsByBuilding(@PathVariable String buildingId) {
         String userEmail = SecurityContextUtil.getCurrentUserEmail();
-        Long residentId = SecurityContextUtil.getCurrentUserId();
+        String residentId = SecurityContextUtil.getCurrentUserId();
         log.debug("Getting notifications for user: {} and building: {}", userEmail, buildingId);
 
         List<NotificationDto> notifications = notificationService.getNotificationsForResidentAndBuilding(residentId, buildingId);
@@ -49,15 +49,15 @@ public class NotificationController {
     @GetMapping("/unread-count")
     @Operation(summary = "Récupérer le nombre de notifications non lues")
     public ResponseEntity<Map<String, Long>> getUnreadCount() {
-        Long residentId = SecurityContextUtil.getCurrentUserId();
+        String residentId = SecurityContextUtil.getCurrentUserId();
         Long count = notificationService.getUnreadCount(residentId);
         return ResponseEntity.ok(Map.of("unreadCount", count));
     }
 
     @GetMapping("/unread-count/building/{buildingId}")
     @Operation(summary = "Récupérer le nombre de notifications non lues pour un bâtiment")
-    public ResponseEntity<Map<String, Long>> getUnreadCountByBuilding(@PathVariable Long buildingId) {
-        Long residentId = SecurityContextUtil.getCurrentUserId();
+    public ResponseEntity<Map<String, Long>> getUnreadCountByBuilding(@PathVariable String buildingId) {
+        String residentId = SecurityContextUtil.getCurrentUserId();
         Long count = notificationService.getUnreadCountForBuilding(residentId, buildingId);
         return ResponseEntity.ok(Map.of("unreadCount", count));
     }
@@ -73,7 +73,7 @@ public class NotificationController {
     @PutMapping("/mark-all-read")
     @Operation(summary = "Marquer toutes les notifications comme lues")
     public ResponseEntity<Void> markAllAsRead() {
-        Long residentId = SecurityContextUtil.getCurrentUserId();
+        String residentId = SecurityContextUtil.getCurrentUserId();
         log.debug("Marking all notifications as read for resident: {}", residentId);
         notificationService.markAllAsRead(residentId);
         return ResponseEntity.ok().build();
