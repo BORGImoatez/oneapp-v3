@@ -59,6 +59,9 @@ class ChannelProvider with ChangeNotifier {
 
       // Filtrer les canaux pour ne garder que ceux du bâtiment actuel
       _channels = loadedChannels.where((channel) {
+        // Toujours garder les discussions ONE_TO_ONE
+        if (channel.type == 'ONE_TO_ONE') return true;
+
         // Garder les canaux sans bâtiment spécifique (PUBLIC, etc.)
         if (channel.buildingId == null) return true;
 

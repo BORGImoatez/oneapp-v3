@@ -245,11 +245,18 @@ public class ChannelService {
             return Optional.of(convertToDto(existingChannel.get(), userId1));
         }
 
+        // Récupérer le buildingId actuel depuis le contexte
+        String currentBuildingId = getCurrentBuildingFromContext();
+        if (currentBuildingId == null) {
+            currentBuildingId = getCurrentUserBuildingId(user1);
+        }
+
         // Créer un nouveau canal one-to-one avec le nom de l'autre utilisateur
         CreateChannelRequest request = new CreateChannelRequest();
         request.setName(user2.getFname() + " " + user2.getLname());
         request.setType(ChannelType.ONE_TO_ONE);
         request.setIsPrivate(true);
+        request.setBuildingId(currentBuildingId);
         request.setMemberIds(List.of(realUserId2));
 
         ChannelDto channel = createChannel(request, userId1);
