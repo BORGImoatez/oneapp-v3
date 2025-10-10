@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
 import '../models/message_model.dart';
@@ -281,33 +280,32 @@ class MessageBubble extends StatelessWidget {
 
   Future<void> _downloadImage(String imageUrl) async {
     try {
-      PermissionStatus status;
-      if (Platform.isAndroid) {
-        if (await _getAndroidVersion() >= 33) {
-          status = PermissionStatus.granted;
-        } else {
-          status = await Permission.storage.request();
-        }
-      } else {
-        status = await Permission.storage.request();
-      }
+      // Note: Pas besoin de permission pour écrire dans l'espace privé de l'app
 
-      if (!status.isGranted && !Platform.isAndroid) {
-        return;
-      }
-
+      // Utiliser le répertoire approprié selon la plateforme
       Directory? directory;
       if (Platform.isAndroid) {
-        directory = Directory('/storage/emulated/0/Download');
-        if (!await directory.exists()) {
-          directory = await getExternalStorageDirectory();
+        // Sur Android, utiliser getExternalStorageDirectory()
+        directory = await getExternalStorageDirectory();
+        if (directory != null) {
+          // Créer un sous-dossier Images dans notre espace app
+          final imagesDir = Directory('${directory.path}/Images');
+          if (!await imagesDir.exists()) {
+            await imagesDir.create(recursive: true);
+          }
+          directory = imagesDir;
         }
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
 
+      if (directory == null) {
+        print('DEBUG: Impossible d\'obtenir le répertoire');
+        return;
+      }
+
       final fileName = 'MGI_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final filePath = '${directory?.path}/$fileName';
+      final filePath = '${directory.path}/$fileName';
 
       print('DEBUG: Téléchargement de l\'image depuis: $imageUrl');
       print('DEBUG: Vers: $filePath');
@@ -432,28 +430,8 @@ class MessageBubble extends StatelessWidget {
     print('DEBUG: Tentative de téléchargement du fichier depuis: $downloadUrl');
 
     try {
-      PermissionStatus status;
-      if (Platform.isAndroid) {
-        if (await _getAndroidVersion() >= 33) {
-          status = PermissionStatus.granted;
-        } else {
-          status = await Permission.storage.request();
-        }
-      } else {
-        status = await Permission.storage.request();
-      }
-
-      if (!status.isGranted && !Platform.isAndroid) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Permission de stockage requise'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
+      // Note: Pas besoin de permission pour écrire dans getExternalStorageDirectory()
+      // sur Android (espace privé de l'app) ou getApplicationDocumentsDirectory() sur iOS
 
       if (context.mounted) {
         showDialog(
@@ -471,19 +449,32 @@ class MessageBubble extends StatelessWidget {
         );
       }
 
+      // Utiliser le répertoire approprié selon la plateforme
       Directory? directory;
       if (Platform.isAndroid) {
-        directory = Directory('/storage/emulated/0/Download');
-        if (!await directory.exists()) {
-          directory = await getExternalStorageDirectory();
+        // Sur Android, utiliser getExternalStorageDirectory() qui pointe vers
+        // /storage/emulated/0/Android/data/[package]/files
+        // C'est accessible sans permission spéciale sur Android 10+
+        directory = await getExternalStorageDirectory();
+        if (directory != null) {
+          // Créer un sous-dossier Downloads dans notre espace app
+          final downloadDir = Directory('${directory.path}/Downloads');
+          if (!await downloadDir.exists()) {
+            await downloadDir.create(recursive: true);
+          }
+          directory = downloadDir;
         }
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
 
+      if (directory == null) {
+        throw Exception('Impossible d\'obtenir le répertoire de téléchargement');
+      }
+
       final fileName = message.fileAttachment?.originalFilename ??
           downloadUrl.split('/').last.split('?').first;
-      final filePath = '${directory?.path}/$fileName';
+      final filePath = '${directory.path}/$fileName';
 
       print('DEBUG: Téléchargement vers: $filePath');
 
@@ -504,9 +495,24 @@ class MessageBubble extends StatelessWidget {
       if (context.mounted) Navigator.of(context).pop();
 
       if (context.mounted) {
+        final locationMsg = Platform.isAndroid
+            ? 'Fichiers de l\'app > Downloads'
+            : 'Documents de l\'app';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fichier téléchargé: $fileName'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('✓ Fichier téléchargé: $fileName'),
+                const SizedBox(height: 4),
+                Text(
+                  'Emplacement: $locationMsg',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ],
+            ),
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Ouvrir',
@@ -517,10 +523,18 @@ class MessageBubble extends StatelessWidget {
                   print('DEBUG: Résultat d\'ouverture du fichier: ${result.message}');
                 } catch (e) {
                   print('DEBUG: Erreur lors de l\'ouverture: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Impossible d\'ouvrir: $e'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
                 }
               },
             ),
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -546,16 +560,6 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  Future<int> _getAndroidVersion() async {
-    if (Platform.isAndroid) {
-      final version = Platform.operatingSystemVersion;
-      final match = RegExp(r'Android (\d+)').firstMatch(version);
-      if (match != null) {
-        return int.parse(match.group(1)!);
-      }
-    }
-    return 0;
-  }
 
   IconData _getFileIcon(String fileName) {
     final extension = fileName.split('.').last.toLowerCase();
