@@ -10,6 +10,7 @@ import '../../widgets/notification_card.dart';
 import '../../widgets/quick_access_card.dart';
 import '../../widgets/building_selector_dropdown.dart';
 import '../chat/chat_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -193,7 +194,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const BuildingSelectorDropdown(),
                 IconButton(
                   onPressed: () {
-                    // TODO: Show notifications
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen(),
+                      ),
+                    );
                   },
                   icon: Consumer<NotificationProvider>(
                     builder: (context, notificationProvider, child) {

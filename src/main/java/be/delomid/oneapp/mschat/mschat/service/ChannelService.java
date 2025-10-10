@@ -36,6 +36,7 @@ public class ChannelService {
     private final ApartmentRepository apartmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
     private final FCMService fcmService;
+    private final NotificationService notificationService;
 
     @Transactional
     public ChannelDto createChannel(CreateChannelRequest request, String createdBy) {
@@ -638,9 +639,12 @@ public class ChannelService {
             String notificationBody = creatorName + " a créé un canal pour le sujet : " + channel.getName();
 
             List<ResidentBuilding> buildingResidents = residentBuildingRepository.findActiveByBuildingId(buildingId);
-            List<String> fcmTokens = buildingResidents.stream()
+            List<Resident> recipients = buildingResidents.stream()
                     .map(ResidentBuilding::getResident)
                     .filter(resident -> !resident.getIdUsers().equals(creator.getIdUsers()))
+                    .collect(java.util.stream.Collectors.toList());
+
+            List<String> fcmTokens = recipients.stream()
                     .map(Resident::getFcmToken)
                     .filter(token -> token != null && !token.isEmpty())
                     .collect(java.util.stream.Collectors.toList());
@@ -653,6 +657,19 @@ public class ChannelService {
                         String.valueOf(channel.getId())
                 );
                 log.info("Sent {} notifications for channel creation", fcmTokens.size());
+
+                for (Resident recipient : recipients) {
+                    notificationService.createNotification(
+                            recipient.getIdUsers(),
+                            buildingId,
+                            notificationTitle,
+                            notificationBody,
+                            "CHANNEL_CREATED",
+                            channel.getId(),
+                            null,
+                            null
+                    );
+                }
             } else {
                 log.info("No FCM tokens found for building residents");
             }
