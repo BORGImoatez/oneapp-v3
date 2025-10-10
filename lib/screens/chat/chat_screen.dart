@@ -33,6 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _hasText = false;
   String? _recordingPath;
   DateTime? _recordingStartTime;
+  double _slideOffset = 0.0;
 
   @override
   void initState() {
@@ -184,6 +185,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {
       _isRecording = true;
       _recordingStartTime = DateTime.now();
+      _slideOffset = 0.0;
     });
 
     try {
@@ -264,6 +266,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _isRecording = false;
         _recordingPath = null;
         _recordingStartTime = null;
+        _slideOffset = 0.0;
       });
     }
   }
@@ -282,6 +285,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _isRecording = false;
         _recordingPath = null;
         _recordingStartTime = null;
+        _slideOffset = 0.0;
       });
     }
   }
@@ -587,6 +591,16 @@ class _ChatScreenState extends State<ChatScreen> {
       key: const ValueKey('mic'),
       onLongPressStart: (_) => _startRecording(),
       onLongPressEnd: (_) => _stopRecording(),
+      onLongPressMoveUpdate: (details) {
+        setState(() {
+          _slideOffset = details.localPosition.dx;
+        });
+
+        // Si l'utilisateur glisse trop vers la gauche, annuler
+        if (_slideOffset < -100) {
+          _cancelRecording();
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 48,
@@ -614,21 +628,43 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildRecordingControls() {
+    final isNearCancel = _slideOffset < -50;
+
     return Expanded(
       key: const ValueKey('recording'),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Indicateur d'enregistrement
+          // Icône de suppression (glisser vers la gauche pour annuler)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isNearCancel ? Colors.red[400] : Colors.red[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.delete_outline,
+              color: isNearCancel ? Colors.white : Colors.red,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Barre d'enregistrement
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppTheme.errorColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
-              ),
+            child: Transform.translate(
+              offset: Offset(_slideOffset.clamp(-100, 0), 0),
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(24),
+                ),
               child: Row(
                 children: [
+                  // Point rouge pulsant
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.0, end: 1.0),
                     duration: const Duration(milliseconds: 800),
@@ -636,10 +672,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       return Opacity(
                         opacity: (value * 0.5) + 0.5,
                         child: Container(
-                          width: 12,
-                          height: 12,
+                          width: 10,
+                          height: 10,
                           decoration: const BoxDecoration(
-                            color: AppTheme.errorColor,
+                            color: Colors.red,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -652,38 +688,81 @@ class _ChatScreenState extends State<ChatScreen> {
                     },
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Enregistrement en cours...',
-                          style: TextStyle(
-                            color: AppTheme.errorColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+
+                  // Timer
+                  StreamBuilder<int>(
+                    stream: Stream.periodic(const Duration(seconds: 1), (count) => count),
+                    builder: (context, snapshot) {
+                      final duration = _recordingStartTime != null
+                          ? DateTime.now().difference(_recordingStartTime!)
+                          : Duration.zero;
+                      final minutes = duration.inMinutes.toString().padLeft(2, '0');
+                      final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+
+                      return Text(
+                        '$minutes:$seconds',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
                         ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Relâchez pour envoyer',
-                          style: TextStyle(
-                            color: AppTheme.errorColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                  const Icon(
-                    Icons.swipe_left,
-                    color: AppTheme.errorColor,
-                    size: 20,
+
+                  const Spacer(),
+
+                  // Onde sonore animée
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.3, end: 1.0),
+                          duration: Duration(milliseconds: 300 + (index * 100)),
+                          curve: Curves.easeInOut,
+                          builder: (context, value, child) {
+                            return Container(
+                              width: 3,
+                              height: 20 * value,
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            );
+                          },
+                          onEnd: () {
+                            if (_isRecording && mounted) {
+                              setState(() {});
+                            }
+                          },
+                        ),
+                      );
+                    }),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // Flèche glisser pour annuler
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.chevron_left,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
+                      Text(
+                        'Glisser pour annuler',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ],
