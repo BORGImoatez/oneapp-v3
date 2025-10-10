@@ -362,6 +362,7 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       applicationName: 'MGI',
       applicationVersion: '1.0.0',
+      applicationLegalese: 'Powered by DELOMID IT',
       applicationIcon: Container(
         width: 60,
         height: 60,
@@ -380,6 +381,55 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 16),
         const Text(
           'Application de messagerie pour la gestion des communications dans les immeubles résidentiels.',
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.code,
+                color: AppTheme.primaryColor,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Powered by',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'DELOMID IT',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Solutions informatiques innovantes',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
