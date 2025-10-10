@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:open_filex/open_filex.dart';
 import 'dart:io';
 import '../models/message_model.dart';
 import '../utils/app_theme.dart';
@@ -164,18 +166,23 @@ class MessageBubble extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ClipRRect(
+        InkWell(
+          onTap: () => _downloadImage(message.content),
           borderRadius: BorderRadius.circular(12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final maxImageWidth = constraints.maxWidth > 0 ? constraints.maxWidth : 200.0;
-              return Image.network(
-                message.content,
-                width: maxImageWidth.clamp(150.0, 250.0),
-                fit: BoxFit.cover,
-                headers: const {
-                  'Accept': 'image/*',
-                },
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxImageWidth = constraints.maxWidth > 0 ? constraints.maxWidth : 200.0;
+                    return Image.network(
+                      message.content,
+                      width: maxImageWidth.clamp(150.0, 250.0),
+                      fit: BoxFit.cover,
+                      headers: const {
+                        'Accept': 'image/*',
+                      },
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   final maxImageWidth = constraints.maxWidth > 0 ? constraints.maxWidth.clamp(150.0, 250.0) : 200.0;
@@ -235,30 +242,110 @@ class MessageBubble extends StatelessWidget {
             },
           ),
         ),
+              Positioned(
+                bottom: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.download,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Télécharger',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _downloadImage(String imageUrl) async {
+    BuildContext? dialogContext;
+
+    try {
+      PermissionStatus status;
+      if (Platform.isAndroid) {
+        if (await _getAndroidVersion() >= 33) {
+          status = PermissionStatus.granted;
+        } else {
+          status = await Permission.storage.request();
+        }
+      } else {
+        status = await Permission.storage.request();
+      }
+
+      if (!status.isGranted && !Platform.isAndroid) {
+        return;
+      }
+
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download');
+        if (!await directory.exists()) {
+          directory = await getExternalStorageDirectory();
+        }
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      final fileName = 'MGI_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final filePath = '${directory?.path}/$fileName';
+
+      final dio = Dio();
+      await dio.download(imageUrl, filePath);
+
+      print('Image téléchargée: $filePath');
+    } catch (e) {
+      print('Erreur lors du téléchargement de l\'image: $e');
+    }
   }
 
   Widget _buildFileMessage(BuildContext context) {
     final fileName = message.fileAttachment?.originalFilename ??
         message.content.split('/').last.split('?').first;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () => _downloadFile(context),
+    return InkWell(
+      onTap: () => _downloadFile(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: (isMe ? Colors.white : AppTheme.primaryColor).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               _getFileIcon(fileName),
               color: isMe ? Colors.white : AppTheme.primaryColor,
+              size: 28,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,25 +355,41 @@ class MessageBubble extends StatelessWidget {
                     style: TextStyle(
                       color: isMe ? Colors.white : AppTheme.textPrimary,
                       fontWeight: FontWeight.w500,
+                      fontSize: 14,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
-                  if (message.fileAttachment?.fileSize != null)
-                    Text(
-                      _formatFileSize(message.fileAttachment!.fileSize),
-                      style: TextStyle(
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (message.fileAttachment?.fileSize != null)
+                        Text(
+                          _formatFileSize(message.fileAttachment!.fileSize),
+                          style: TextStyle(
+                            color: isMe ? Colors.white70 : Colors.grey[600],
+                            fontSize: 11,
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.download,
+                        size: 12,
                         color: isMe ? Colors.white70 : Colors.grey[600],
-                        fontSize: 12,
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Télécharger',
+                        style: TextStyle(
+                          color: isMe ? Colors.white70 : Colors.grey[600],
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.download,
-              size: 16,
-              color: isMe ? Colors.white70 : Colors.grey[600],
             ),
           ],
         ),
@@ -298,7 +401,29 @@ class MessageBubble extends StatelessWidget {
     if (message.fileAttachment?.downloadUrl == null) return;
 
     try {
-      // Afficher un indicateur de chargement
+      PermissionStatus status;
+      if (Platform.isAndroid) {
+        if (await _getAndroidVersion() >= 33) {
+          status = PermissionStatus.granted;
+        } else {
+          status = await Permission.storage.request();
+        }
+      } else {
+        status = await Permission.storage.request();
+      }
+
+      if (!status.isGranted && !Platform.isAndroid) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permission de stockage requise'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       if (context.mounted) {
         showDialog(
           context: context,
@@ -315,13 +440,20 @@ class MessageBubble extends StatelessWidget {
         );
       }
 
-      // Obtenir le répertoire de téléchargement
-      final directory = await getApplicationDocumentsDirectory();
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download');
+        if (!await directory.exists()) {
+          directory = await getExternalStorageDirectory();
+        }
+      } else {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
       final fileName = message.fileAttachment?.originalFilename ??
           'file_${DateTime.now().millisecondsSinceEpoch}';
-      final filePath = '${directory.path}/$fileName';
+      final filePath = '${directory?.path}/$fileName';
 
-      // Télécharger le fichier
       final dio = Dio();
       await dio.download(
         message.fileAttachment!.downloadUrl,
@@ -334,26 +466,29 @@ class MessageBubble extends StatelessWidget {
         },
       );
 
-      // Fermer l'indicateur de chargement
       if (context.mounted) Navigator.of(context).pop();
 
-      // Afficher un message de succès
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Fichier téléchargé: $fileName'),
             backgroundColor: Colors.green,
             action: SnackBarAction(
-              label: 'OK',
-              onPressed: () {},
+              label: 'Ouvrir',
+              textColor: Colors.white,
+              onPressed: () async {
+                await OpenFilex.open(filePath);
+              },
             ),
+            duration: const Duration(seconds: 5),
           ),
         );
       }
 
     } catch (e) {
-      // Fermer l'indicateur de chargement en cas d'erreur
-      if (context.mounted) Navigator.of(context).pop();
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,6 +499,17 @@ class MessageBubble extends StatelessWidget {
         );
       }
     }
+  }
+
+  Future<int> _getAndroidVersion() async {
+    if (Platform.isAndroid) {
+      final version = Platform.operatingSystemVersion;
+      final match = RegExp(r'Android (\d+)').firstMatch(version);
+      if (match != null) {
+        return int.parse(match.group(1)!);
+      }
+    }
+    return 0;
   }
 
   IconData _getFileIcon(String fileName) {
