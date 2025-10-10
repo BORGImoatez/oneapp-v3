@@ -476,10 +476,12 @@ class _ChatScreenState extends State<ChatScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            _buildAttachmentButton(),
-            const SizedBox(width: 8),
-            _buildTextInput(),
-            const SizedBox(width: 8),
+            if (!_isRecording) ...[
+              _buildAttachmentButton(),
+              const SizedBox(width: 8),
+              _buildTextInput(),
+              const SizedBox(width: 8),
+            ],
             _buildSendButton(),
           ],
         ),
@@ -577,81 +579,98 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildRecordingControls() {
-    return Row(
+    return Expanded(
       key: const ValueKey('recording'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Bouton Annuler
-        GestureDetector(
-          onTap: _cancelRecording,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.grey[400],
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.close,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // Indicateur d'enregistrement
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppTheme.errorColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppTheme.errorColor,
-                  shape: BoxShape.circle,
-                ),
+      child: Row(
+        children: [
+          // Bouton Annuler
+          GestureDetector(
+            onTap: _cancelRecording,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey[400],
+                borderRadius: BorderRadius.circular(24),
               ),
-              const SizedBox(width: 8),
-              const Text(
-                'Enregistrement...',
-                style: TextStyle(
-                  color: AppTheme.errorColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: const Icon(
+                Icons.close,
+                color: Colors.white,
+                size: 20,
               ),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // Bouton Envoyer
-        GestureDetector(
-          onTap: _stopRecording,
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.send,
-              color: Colors.white,
-              size: 20,
             ),
           ),
-        ),
-      ],
+
+          const SizedBox(width: 12),
+
+          // Indicateur d'enregistrement
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, value, child) {
+                      return Opacity(
+                        opacity: (value * 0.5) + 0.5,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.errorColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      if (_isRecording && mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Enregistrement en cours...',
+                    style: TextStyle(
+                      color: AppTheme.errorColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Bouton Envoyer
+          GestureDetector(
+            onTap: _stopRecording,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.send,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
