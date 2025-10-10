@@ -122,45 +122,43 @@ public class FCMService {
     }
 
     private void sendBatch(List<String> tokens, String title, String body, String channelId) {
-        try {
-            MulticastMessage message = MulticastMessage.builder()
-                    .addAllTokens(tokens)
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
-                    .putData("channelId", channelId)
-                    .putData("type", "CHANNEL_CREATED")
-                    .setAndroidConfig(AndroidConfig.builder()
-                            .setPriority(AndroidConfig.Priority.HIGH)
-                            .setNotification(AndroidNotification.builder()
-                                    .setSound("default")
-                                    .setChannelId("channel_notifications")
-                                    .build())
-                            .build())
-                    .setApnsConfig(ApnsConfig.builder()
-                            .setAps(Aps.builder()
-                                    .setSound("default")
-                                    .build())
-                            .build())
-                    .build();
+        int successCount = 0;
+        int failureCount = 0;
 
-            BatchResponse response = FirebaseMessaging.getInstance().sendMulticast(message);
-            log.info("Successfully sent {} notifications, failed: {}",
-                    response.getSuccessCount(), response.getFailureCount());
+        for (String token : tokens) {
+            try {
+                Message message = Message.builder()
+                        .setToken(token)
+                        .setNotification(Notification.builder()
+                                .setTitle(title)
+                                .setBody(body)
+                                .build())
+                        .putData("channelId", channelId)
+                        .putData("type", "CHANNEL_CREATED")
+                        .setAndroidConfig(AndroidConfig.builder()
+                                .setPriority(AndroidConfig.Priority.HIGH)
+                                .setNotification(AndroidNotification.builder()
+                                        .setSound("default")
+                                        .setChannelId("channel_notifications")
+                                        .build())
+                                .build())
+                        .setApnsConfig(ApnsConfig.builder()
+                                .setAps(Aps.builder()
+                                        .setSound("default")
+                                        .build())
+                                .build())
+                        .build();
 
-            if (response.getFailureCount() > 0) {
-                List<SendResponse> responses = response.getResponses();
-                for (int i = 0; i < responses.size(); i++) {
-                    if (!responses.get(i).isSuccessful()) {
-                        log.error("Failed to send to token {}: {}",
-                                tokens.get(i), responses.get(i).getException().getMessage());
-                    }
-                }
+                String response = FirebaseMessaging.getInstance().send(message);
+                successCount++;
+                log.debug("Successfully sent notification to token: {}", response);
+            } catch (Exception e) {
+                failureCount++;
+                log.error("Failed to send to token {}: {}", token, e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("Error sending batch notifications: {}", e.getMessage(), e);
         }
+
+        log.info("Successfully sent {} notifications, failed: {}", successCount, failureCount);
     }
 
     private <T> List<List<T>> partition(List<T> list, int size) {
