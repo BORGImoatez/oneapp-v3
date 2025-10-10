@@ -502,17 +502,17 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            if (!_isRecording) ...[
-              _buildAttachmentButton(),
-              const SizedBox(width: 8),
-              _buildTextInput(),
-              const SizedBox(width: 8),
-            ],
-            _buildSendButton(),
-          ],
-        ),
+        child: _isRecording
+            ? _buildRecordingUI()
+            : Row(
+                children: [
+                  _buildAttachmentButton(),
+                  const SizedBox(width: 8),
+                  _buildTextInput(),
+                  const SizedBox(width: 8),
+                  _buildSendButton(),
+                ],
+              ),
       ),
     );
   }
@@ -556,10 +556,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildSendButton() {
-    if (_isRecording) {
-      return _buildRecordingControls();
-    }
-
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: _hasText
@@ -591,34 +587,13 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMicrophoneButton() {
     return GestureDetector(
       key: const ValueKey('mic'),
-      onLongPressStart: (_) => _startRecording(),
-      onLongPressEnd: (_) => _stopRecording(),
-      onLongPressMoveUpdate: (details) {
-        setState(() {
-          _slideOffset = details.localPosition.dx;
-        });
-
-        // Si l'utilisateur glisse trop vers la gauche, annuler
-        if (_slideOffset < -100) {
-          _cancelRecording();
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      onTap: _startRecording,
+      child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _isRecording ? AppTheme.errorColor : Colors.grey[400],
+          color: Colors.grey[400],
           borderRadius: BorderRadius.circular(24),
-          boxShadow: _isRecording
-              ? [
-            BoxShadow(
-              color: AppTheme.errorColor.withOpacity(0.4),
-              blurRadius: 8,
-              spreadRadius: 2,
-            ),
-          ]
-              : null,
         ),
         child: const Icon(
           Icons.mic,
@@ -629,15 +604,40 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildRecordingUI() {
+    return GestureDetector(
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          _slideOffset += details.delta.dx;
+          _slideOffset = _slideOffset.clamp(-150.0, 0.0);
+        });
+
+        // Si l'utilisateur glisse trop vers la gauche, annuler
+        if (_slideOffset < -120) {
+          _cancelRecording();
+        }
+      },
+      onHorizontalDragEnd: (_) {
+        // Réinitialiser le slide si pas assez glissé pour annuler
+        if (_slideOffset > -120) {
+          setState(() {
+            _slideOffset = 0.0;
+          });
+        }
+      },
+      child: _buildRecordingControls(),
+    );
+  }
+
   Widget _buildRecordingControls() {
     final isNearCancel = _slideOffset < -50;
 
-    return Expanded(
-      key: const ValueKey('recording'),
-      child: Row(
-        children: [
-          // Icône de suppression (glisser vers la gauche pour annuler)
-          AnimatedContainer(
+    return Row(
+      children: [
+        // Icône de suppression (glisser vers la gauche pour annuler)
+        GestureDetector(
+          onTap: _cancelRecording,
+          child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 40,
             height: 40,
@@ -651,19 +651,20 @@ class _ChatScreenState extends State<ChatScreen> {
               size: 20,
             ),
           ),
-          const SizedBox(width: 12),
+        ),
+        const SizedBox(width: 12),
 
-          // Barre d'enregistrement
-          Expanded(
-            child: Transform.translate(
-              offset: Offset(_slideOffset.clamp(-100, 0), 0),
-              child: Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                ),
+        // Barre d'enregistrement
+        Expanded(
+          child: Transform.translate(
+            offset: Offset(_slideOffset.clamp(-100, 0), 0),
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(24),
+              ),
               child: Row(
                 children: [
                   // Point rouge pulsant
@@ -767,8 +768,26 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             ),
           ),
-        ],
-      ),
+        const SizedBox(width: 12),
+
+        // Bouton d'envoi
+        GestureDetector(
+          onTap: _stopRecording,
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: const BoxDecoration(
+              color: AppTheme.primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.send,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
