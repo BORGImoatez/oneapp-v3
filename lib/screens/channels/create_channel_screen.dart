@@ -107,107 +107,111 @@ class _CreateChannelScreenState extends State<CreateChannelScreen> {
   }
 
   Widget _buildMemberSelectionSheet() {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Ajouter des membres',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: Consumer<ChannelProvider>(
-              builder: (context, channelProvider, child) {
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final currentBuildingId = authProvider.user?.buildingId;
-                final residents = channelProvider.buildingResidents
-                    .where((resident) => resident.id != authProvider.user?.id)
-                    .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
-                    .toList();
-
-                if (channelProvider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (residents.isEmpty) {
-                  return const Center(
-                    child: Text('Aucun résident trouvé dans l\'immeuble actuel'),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: residents.length,
-                  itemBuilder: (context, index) {
-                    final resident = residents[index];
-                    final isSelected = _selectedMembers.any((m) => m.id == resident.id);
-
-                    return CheckboxListTile(
-                      value: isSelected,
-                      onChanged: (selected) {
-                        setState(() {
-                          if (selected == true) {
-                            _selectedMembers.add(resident);
-                          } else {
-                            _selectedMembers.removeWhere((m) => m.id == resident.id);
-                          }
-                        });
-                      },
-                      title: Text(resident.fullName),
-                      subtitle: Text('Appartement ${resident.apartmentId ?? 'Non assigné'}'),
-                      secondary: CircleAvatar(
-                        backgroundColor: AppTheme.primaryColor,
-                        child: Text(
-                          resident.initials,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      activeColor: AppTheme.primaryColor,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setModalState) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          padding: const EdgeInsets.all(20),
+          child: Column(
             children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Annuler'),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {});
-                  },
-                  child: Text('Ajouter (${_selectedMembers.length})'),
+              const SizedBox(height: 20),
+              const Text(
+                'Ajouter des membres',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: Consumer<ChannelProvider>(
+                  builder: (context, channelProvider, child) {
+                    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                    final currentBuildingId = authProvider.user?.buildingId;
+                    final residents = channelProvider.buildingResidents
+                        .where((resident) => resident.id != authProvider.user?.id)
+                        .where((resident) => resident.buildingId == currentBuildingId || resident.buildingId == null)
+                        .toList();
+
+                    if (channelProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (residents.isEmpty) {
+                      return const Center(
+                        child: Text('Aucun résident trouvé dans l\'immeuble actuel'),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: residents.length,
+                      itemBuilder: (context, index) {
+                        final resident = residents[index];
+                        final isSelected = _selectedMembers.any((m) => m.id == resident.id);
+
+                        return CheckboxListTile(
+                          value: isSelected,
+                          onChanged: (selected) {
+                            setModalState(() {
+                              if (selected == true) {
+                                _selectedMembers.add(resident);
+                              } else {
+                                _selectedMembers.removeWhere((m) => m.id == resident.id);
+                              }
+                            });
+                          },
+                          title: Text(resident.fullName),
+                          subtitle: Text('Appartement ${resident.apartmentId ?? 'Non assigné'}'),
+                          secondary: CircleAvatar(
+                            backgroundColor: AppTheme.primaryColor,
+                            child: Text(
+                              resident.initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          activeColor: AppTheme.primaryColor,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Annuler'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() {});
+                      },
+                      child: Text('Ajouter (${_selectedMembers.length})'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
   @override
