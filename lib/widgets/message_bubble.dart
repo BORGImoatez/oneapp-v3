@@ -280,8 +280,6 @@ class MessageBubble extends StatelessWidget {
   }
 
   Future<void> _downloadImage(String imageUrl) async {
-    BuildContext? dialogContext;
-
     try {
       PermissionStatus status;
       if (Platform.isAndroid) {
@@ -311,12 +309,24 @@ class MessageBubble extends StatelessWidget {
       final fileName = 'MGI_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final filePath = '${directory?.path}/$fileName';
 
-      final dio = Dio();
-      await dio.download(imageUrl, filePath);
+      print('DEBUG: Téléchargement de l\'image depuis: $imageUrl');
+      print('DEBUG: Vers: $filePath');
 
-      print('Image téléchargée: $filePath');
+      final dio = Dio();
+      await dio.download(
+        imageUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            final progress = (received / total * 100).toStringAsFixed(0);
+            print('Téléchargement image: $progress%');
+          }
+        },
+      );
+
+      print('DEBUG: Image téléchargée avec succès: $filePath');
     } catch (e) {
-      print('Erreur lors du téléchargement de l\'image: $e');
+      print('DEBUG: Erreur lors du téléchargement de l\'image: $e');
     }
   }
 
@@ -398,7 +408,28 @@ class MessageBubble extends StatelessWidget {
   }
 
   Future<void> _downloadFile(BuildContext context) async {
-    if (message.fileAttachment?.downloadUrl == null) return;
+    // Obtenir l'URL de téléchargement
+    String? downloadUrl = message.fileAttachment?.downloadUrl;
+
+    // Si pas de downloadUrl dans fileAttachment, utiliser message.content comme fallback
+    if (downloadUrl == null || downloadUrl.isEmpty) {
+      downloadUrl = message.content;
+    }
+
+    // Vérifier que nous avons une URL valide
+    if (downloadUrl.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('URL de téléchargement non disponible'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    print('DEBUG: Tentative de téléchargement du fichier depuis: $downloadUrl');
 
     try {
       PermissionStatus status;
@@ -451,12 +482,14 @@ class MessageBubble extends StatelessWidget {
       }
 
       final fileName = message.fileAttachment?.originalFilename ??
-          'file_${DateTime.now().millisecondsSinceEpoch}';
+          downloadUrl.split('/').last.split('?').first;
       final filePath = '${directory?.path}/$fileName';
+
+      print('DEBUG: Téléchargement vers: $filePath');
 
       final dio = Dio();
       await dio.download(
-        message.fileAttachment!.downloadUrl,
+        downloadUrl,
         filePath,
         onReceiveProgress: (received, total) {
           if (total != -1) {
@@ -465,6 +498,8 @@ class MessageBubble extends StatelessWidget {
           }
         },
       );
+
+      print('DEBUG: Fichier téléchargé avec succès: $filePath');
 
       if (context.mounted) Navigator.of(context).pop();
 
@@ -477,7 +512,12 @@ class MessageBubble extends StatelessWidget {
               label: 'Ouvrir',
               textColor: Colors.white,
               onPressed: () async {
-                await OpenFilex.open(filePath);
+                try {
+                  final result = await OpenFilex.open(filePath);
+                  print('DEBUG: Résultat d\'ouverture du fichier: ${result.message}');
+                } catch (e) {
+                  print('DEBUG: Erreur lors de l\'ouverture: $e');
+                }
               },
             ),
             duration: const Duration(seconds: 5),
@@ -486,8 +526,12 @@ class MessageBubble extends StatelessWidget {
       }
 
     } catch (e) {
+      print('DEBUG: Erreur lors du téléchargement: $e');
+
       if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
       }
 
       if (context.mounted) {
@@ -495,6 +539,7 @@ class MessageBubble extends StatelessWidget {
           SnackBar(
             content: Text('Erreur lors du téléchargement: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
