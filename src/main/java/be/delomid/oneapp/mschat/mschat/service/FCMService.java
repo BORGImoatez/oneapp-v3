@@ -6,11 +6,13 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,13 +24,22 @@ public class FCMService {
     @Value("${firebase.config.path:#{null}}")
     private String firebaseConfigPath;
 
-    private boolean firebaseInitialized = false;
-
     @PostConstruct
     public void initialize() {
         try {
             if (firebaseConfigPath != null && !firebaseConfigPath.isEmpty()) {
-                FileInputStream serviceAccount = new FileInputStream(firebaseConfigPath);
+                InputStream serviceAccount;
+
+                // Essayer d'abord comme ressource du classpath
+                try {
+                    ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
+                    serviceAccount = resource.getInputStream();
+                    log.info("Loaded Firebase config from classpath: {}", firebaseConfigPath);
+                } catch (Exception e) {
+                    // Sinon, essayer comme chemin de fichier absolu
+                    serviceAccount = new FileInputStream(firebaseConfigPath);
+                    log.info("Loaded Firebase config from file system: {}", firebaseConfigPath);
+                }
 
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -36,37 +47,19 @@ public class FCMService {
 
                 if (FirebaseApp.getApps().isEmpty()) {
                     FirebaseApp.initializeApp(options);
-                    firebaseInitialized = true;
                     log.info("Firebase initialized successfully");
-                } else {
-                    firebaseInitialized = true;
-                    log.info("Firebase already initialized");
                 }
+
+                serviceAccount.close();
             } else {
                 log.warn("Firebase config path not set. Push notifications will not work.");
-                log.warn("Please set firebase.config.path in application.properties");
             }
         } catch (IOException e) {
             log.error("Error initializing Firebase: {}", e.getMessage(), e);
-            log.error("Please verify the firebase.config.path in application.properties points to a valid service account JSON file");
-        } catch (Exception e) {
-            log.error("Unexpected error initializing Firebase: {}", e.getMessage(), e);
         }
-    }
-
-    private boolean isFirebaseAvailable() {
-        if (!firebaseInitialized) {
-            log.warn("Firebase is not initialized. Notifications cannot be sent.");
-            return false;
-        }
-        return true;
     }
 
     public void sendNotificationToToken(String fcmToken, String title, String body, String channelId) {
-        if (!isFirebaseAvailable()) {
-            return;
-        }
-
         if (fcmToken == null || fcmToken.isEmpty()) {
             log.warn("FCM token is empty, skipping notification");
             return;
@@ -103,10 +96,6 @@ public class FCMService {
     }
 
     public void sendNotificationToMultipleTokens(List<String> fcmTokens, String title, String body, String channelId) {
-        if (!isFirebaseAvailable()) {
-            return;
-        }
-
         if (fcmTokens == null || fcmTokens.isEmpty()) {
             log.warn("FCM tokens list is empty, skipping notifications");
             return;
