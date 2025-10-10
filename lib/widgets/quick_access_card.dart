@@ -7,6 +7,7 @@ class QuickAccessCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
+  final int? badge;
 
   const QuickAccessCard({
     super.key,
@@ -15,6 +16,7 @@ class QuickAccessCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.onTap,
+    this.badge,
   });
 
   @override
@@ -35,18 +37,47 @@ class QuickAccessCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: isSmallScreen ? 32 : 40,
-                height: isSmallScreen ? 32 : 40,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: isSmallScreen ? 16 : 20,
-                ),
+              Stack(
+                children: [
+                  Container(
+                    width: isSmallScreen ? 32 : 40,
+                    height: isSmallScreen ? 32 : 40,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: color,
+                      size: isSmallScreen ? 16 : 20,
+                    ),
+                  ),
+                  if (badge != null && badge! > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          badge! > 99 ? '99+' : '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               SizedBox(height: isSmallScreen ? 8 : 12),
               Flexible(

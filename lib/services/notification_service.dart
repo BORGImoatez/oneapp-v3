@@ -2,9 +2,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'api_service.dart';
 
 class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final ApiService _apiService = ApiService();
   String? _fcmToken;
+  Function()? onNotificationReceived;
 
   String? get fcmToken => _fcmToken;
 
@@ -29,6 +34,9 @@ class NotificationService {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Foreground message: ${message.notification?.title}');
+      if (onNotificationReceived != null) {
+        onNotificationReceived!();
+      }
     });
   }
 

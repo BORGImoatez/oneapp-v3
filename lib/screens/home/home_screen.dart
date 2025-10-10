@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/building_context_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/building_context_indicator.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/notification_card.dart';
@@ -28,6 +29,21 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForCurrentBuilding();
     });
+
+    NotificationService().onNotificationReceived = () {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final buildingId = authProvider.user?.buildingId;
+      if (buildingId != null) {
+        final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+        notificationProvider.loadUnreadCountForBuilding(buildingId);
+      }
+    };
+  }
+
+  @override
+  void dispose() {
+    NotificationService().onNotificationReceived = null;
+    super.dispose();
   }
 
   @override
@@ -335,6 +351,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     }
+                  },
+                ),
+                Consumer<NotificationProvider>(
+                  builder: (context, notificationProvider, child) {
+                    return QuickAccessCard(
+                      title: 'Notifications',
+                      subtitle: notificationProvider.unreadNotifications > 0
+                          ? '${notificationProvider.unreadNotifications} non lue${notificationProvider.unreadNotifications > 1 ? 's' : ''}'
+                          : 'Aucune notification',
+                      icon: Icons.notifications,
+                      color: AppTheme.warningColor,
+                      badge: notificationProvider.unreadNotifications > 0
+                          ? notificationProvider.unreadNotifications
+                          : null,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationsScreen(),
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
               ],
