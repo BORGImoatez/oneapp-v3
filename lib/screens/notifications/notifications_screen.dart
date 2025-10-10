@@ -4,7 +4,7 @@ import '../../services/notification_api_service.dart';
 import '../../services/api_service.dart';
 import '../../utils/app_theme.dart';
 import '../channels/channels_screen.dart';
-import '../vote/vote_detail_screen.dart';
+import '../votes/vote_screen.dart';
 import '../files/files_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -114,7 +114,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VoteDetailScreen(voteId: notification.voteId!),
+          builder: (context) => const VoteScreen(),
         ),
       );
     } else if (notification.documentId != null) {
@@ -145,13 +145,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Color _getColorForType(String type) {
     switch (type) {
       case 'CHANNEL_CREATED':
-        return AppTheme.primary;
+        return AppTheme.primaryColor;
       case 'VOTE_CREATED':
         return Colors.orange;
       case 'DOCUMENT_UPLOADED':
         return Colors.green;
       case 'MESSAGE_RECEIVED':
-        return AppTheme.primary;
+        return AppTheme.primaryColor;
       default:
         return AppTheme.textSecondary;
     }

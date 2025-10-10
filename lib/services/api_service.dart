@@ -370,6 +370,39 @@ class ApiService {
       }
     }
   }
+
+  Future<http.Response> get(String endpoint) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response;
+    } else {
+      throw ApiException(
+        message: 'Error: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    }
+  }
+
+  Future<http.Response> put(String endpoint, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await _getHeaders(),
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response;
+    } else {
+      throw ApiException(
+        message: 'Error: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    }
+  }
 }
 
 class ApiException implements Exception {
