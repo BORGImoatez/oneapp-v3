@@ -556,6 +556,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildSendButton() {
+    if (_isRecording) {
+      return _buildRecordingControls();
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: _hasText
@@ -585,9 +589,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMicrophoneButton() {
-    return _isRecording
-        ? _buildRecordingControls()
-        : GestureDetector(
+    return GestureDetector(
       key: const ValueKey('mic'),
       onLongPressStart: (_) => _startRecording(),
       onLongPressEnd: (_) => _stopRecording(),
