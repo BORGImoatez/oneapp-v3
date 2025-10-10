@@ -32,6 +32,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isTyping = false;
   bool _hasText = false;
   String? _recordingPath;
+  DateTime? _recordingStartTime;
 
   @override
   void initState() {
@@ -182,6 +183,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() {
       _isRecording = true;
+      _recordingStartTime = DateTime.now();
     });
 
     try {
@@ -201,12 +203,31 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _isRecording = false;
         _recordingPath = null;
+        _recordingStartTime = null;
       });
     }
   }
 
   void _stopRecording() async {
-    if (!_isRecording || _recordingPath == null) return;
+    if (!_isRecording) return;
+
+    final duration = _recordingStartTime != null
+        ? DateTime.now().difference(_recordingStartTime!)
+        : Duration.zero;
+
+    if (duration.inMilliseconds < 500) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maintenez le bouton plus longtemps pour enregistrer'),
+            duration: Duration(seconds: 2),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+      await _cancelRecording();
+      return;
+    }
 
     final audioService = AudioService();
 
@@ -217,18 +238,19 @@ class _ChatScreenState extends State<ChatScreen> {
         _isRecording = false;
       });
 
-      // Vérifier que le fichier existe
-      final file = File(_recordingPath!);
-      if (await file.exists()) {
-        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-        await chatProvider.sendMessageWithFile(
-          widget.channel.id,
-          file,
-          'AUDIO',
-        );
-        print('DEBUG: Audio message sent successfully');
-      } else {
-        throw Exception('Fichier audio non trouvé');
+      if (_recordingPath != null) {
+        final file = File(_recordingPath!);
+        if (await file.exists()) {
+          final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+          await chatProvider.sendMessageWithFile(
+            widget.channel.id,
+            file,
+            'AUDIO',
+          );
+          print('DEBUG: Audio message sent successfully');
+        } else {
+          throw Exception('Fichier audio non trouvé');
+        }
       }
     } catch (e) {
       print('DEBUG: Error stopping recording: $e');
@@ -241,11 +263,12 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _isRecording = false;
         _recordingPath = null;
+        _recordingStartTime = null;
       });
     }
   }
 
-  void _cancelRecording() async {
+  Future<void> _cancelRecording() async {
     if (!_isRecording) return;
 
     final audioService = AudioService();
@@ -258,6 +281,7 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _isRecording = false;
         _recordingPath = null;
+        _recordingStartTime = null;
       });
     }
   }
@@ -561,15 +585,26 @@ class _ChatScreenState extends State<ChatScreen> {
         ? _buildRecordingControls()
         : GestureDetector(
       key: const ValueKey('mic'),
-      onTap: _startRecording,
-      child: Container(
+      onLongPressStart: (_) => _startRecording(),
+      onLongPressEnd: (_) => _stopRecording(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.grey[400],
+          color: _isRecording ? AppTheme.errorColor : Colors.grey[400],
           borderRadius: BorderRadius.circular(24),
+          boxShadow: _isRecording
+              ? [
+            BoxShadow(
+              color: AppTheme.errorColor.withOpacity(0.4),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ]
+              : null,
         ),
-        child: Icon(
+        child: const Icon(
           Icons.mic,
           color: Colors.white,
           size: 20,
@@ -582,37 +617,17 @@ class _ChatScreenState extends State<ChatScreen> {
     return Expanded(
       key: const ValueKey('recording'),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Bouton Annuler
-          GestureDetector(
-            onTap: _cancelRecording,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
           // Indicateur d'enregistrement
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
                 color: AppTheme.errorColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0.0, end: 1.0),
@@ -621,8 +636,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       return Opacity(
                         opacity: (value * 0.5) + 0.5,
                         child: Container(
-                          width: 10,
-                          height: 10,
+                          width: 12,
+                          height: 12,
                           decoration: const BoxDecoration(
                             color: AppTheme.errorColor,
                             shape: BoxShape.circle,
@@ -636,36 +651,38 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
                     },
                   ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Enregistrement en cours...',
-                    style: TextStyle(
-                      color: AppTheme.errorColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Enregistrement en cours...',
+                          style: TextStyle(
+                            color: AppTheme.errorColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Relâchez pour envoyer',
+                          style: TextStyle(
+                            color: AppTheme.errorColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const Icon(
+                    Icons.swipe_left,
+                    color: AppTheme.errorColor,
+                    size: 20,
+                  ),
                 ],
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // Bouton Envoyer
-          GestureDetector(
-            onTap: _stopRecording,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.send,
-                color: Colors.white,
-                size: 20,
               ),
             ),
           ),
