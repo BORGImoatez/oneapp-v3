@@ -96,6 +96,16 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
       ),
       body: Consumer<ChannelProvider>(
         builder: (context, channelProvider, child) {
+          print('DEBUG: DiscussionsScreen - Consumer rebuild');
+          print('DEBUG: isLoading: ${channelProvider.isLoading}');
+          print('DEBUG: error: ${channelProvider.error}');
+          print('DEBUG: channels count: ${channelProvider.channels.length}');
+
+          // Si on a des channels mais le widget ne s'affiche pas, forcer le rebuild
+          if (channelProvider.channels.isNotEmpty && !channelProvider.isLoading) {
+            print('DEBUG: We have ${channelProvider.channels.length} channels, displaying them');
+          }
+
           if (channelProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }

@@ -20,20 +20,27 @@ class ChannelProvider with ChangeNotifier {
   String? get error => _error;
 
   Future<void> loadChannels({bool refresh = false}) async {
-    if (_isLoading && !refresh) return;
-
     // Vérifier le contexte du bâtiment
     final currentBuildingId = BuildingContextService().currentBuildingId;
-    if (_currentBuildingContext != currentBuildingId || refresh) {
-      print('DEBUG: Building context changed, clearing channels data');
-      _channels.clear();
-      _currentBuildingContext = currentBuildingId;
-    }
 
     // Ne pas charger si pas de contexte de bâtiment
     if (currentBuildingId == null) {
       print('DEBUG: No building context, skipping channels load');
       _setLoading(false);
+      return;
+    }
+
+    // Si le contexte a changé ou refresh, on nettoie
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed from $_currentBuildingContext to $currentBuildingId, clearing channels data');
+      _channels.clear();
+      _currentBuildingContext = currentBuildingId;
+      notifyListeners();
+    }
+
+    // Éviter les chargements multiples sauf si refresh
+    if (_isLoading && !refresh) {
+      print('DEBUG: Already loading, skipping');
       return;
     }
 
@@ -43,12 +50,15 @@ class ChannelProvider with ChangeNotifier {
     try {
       print('DEBUG: Loading channels for building context: $currentBuildingId');
       final response = await _apiService.getChannels();
-      _channels = (response['content'] as List)
+
+      List<Channel> loadedChannels = (response['content'] as List)
           .map((json) => Channel.fromJson(json))
           .toList();
 
+      print('DEBUG: Received ${loadedChannels.length} channels from API');
+
       // Filtrer les canaux pour ne garder que ceux du bâtiment actuel
-      _channels = _channels.where((channel) {
+      _channels = loadedChannels.where((channel) {
         // Garder les canaux sans bâtiment spécifique (PUBLIC, etc.)
         if (channel.buildingId == null) return true;
 
@@ -56,7 +66,7 @@ class ChannelProvider with ChangeNotifier {
         return channel.buildingId == currentBuildingId;
       }).toList();
 
-      print('DEBUG: Loaded ${_channels.length} channels for building: $currentBuildingId');
+      print('DEBUG: Filtered to ${_channels.length} channels for building: $currentBuildingId');
 
       // Sort channels by last activity
       _channels.sort((a, b) {
@@ -64,6 +74,8 @@ class ChannelProvider with ChangeNotifier {
         final bTime = b.lastMessage?.createdAt ?? b.createdAt;
         return bTime.compareTo(aTime);
       });
+
+      print('DEBUG: Channels sorted by last activity');
 
     } catch (e) {
       print('DEBUG: Error loading channels: $e');
@@ -174,7 +186,13 @@ class ChannelProvider with ChangeNotifier {
   }
 
   List<Channel> getDirectChannels() {
-    return _channels.where((c) => c.type == 'ONE_TO_ONE').toList();
+    print('DEBUG: Getting direct channels from ${_channels.length} total channels');
+    for (var channel in _channels) {
+      print('DEBUG: Channel ${channel.id} - ${channel.name} - Type: ${channel.type}');
+    }
+    final directChannels = _channels.where((c) => c.type == 'ONE_TO_ONE').toList();
+    print('DEBUG: Found ${directChannels.length} direct channels');
+    return directChannels;
   }
 
   List<Channel> getGroupChannels() {
