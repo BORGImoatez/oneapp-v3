@@ -81,6 +81,21 @@ class _MainScreenState extends State<MainScreen> {
     print('DEBUG: Data refresh completed for current building');
   }
 
+  void _onTabChanged(int index) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+
+    if (currentBuildingId == null) return;
+
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+
+    // Index 1 = Canaux, Index 2 = Discussions
+    if (index == 1 || index == 2) {
+      print('DEBUG: Tab changed to ${index == 1 ? "Channels" : "Discussions"}, reloading data');
+      channelProvider.loadChannels(refresh: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,6 +112,9 @@ class _MainScreenState extends State<MainScreen> {
               setState(() {
                 _currentIndex = index;
               });
+
+              // Recharger les données quand on change d'onglet
+              _onTabChanged(index);
             },
             type: BottomNavigationBarType.fixed,
             selectedItemColor: AppTheme.primaryColor,
