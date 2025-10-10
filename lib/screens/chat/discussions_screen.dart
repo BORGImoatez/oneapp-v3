@@ -189,8 +189,14 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
   }
 
   Widget _buildDiscussionCard(Channel channel) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentUserId = authProvider.user?.id;
+    final isReceivedMessage = channel.lastMessage != null &&
+                              channel.lastMessage!.senderId != currentUserId;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: isReceivedMessage ? Colors.blue.shade50 : Colors.white,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
@@ -211,7 +217,8 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: Colors.grey[600],
+            color: isReceivedMessage ? Colors.blue[900] : Colors.grey[600],
+            fontWeight: isReceivedMessage ? FontWeight.w500 : FontWeight.normal,
           ),
         )
             : Text(
@@ -228,20 +235,23 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
             if (channel.lastMessage != null)
               Text(
                 _formatTime(channel.lastMessage!.createdAt),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppTheme.textSecondary,
+                  color: isReceivedMessage ? Colors.blue[700] : AppTheme.textSecondary,
+                  fontWeight: isReceivedMessage ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
-            const SizedBox(height: 4),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: AppTheme.onlineColor,
-                borderRadius: BorderRadius.circular(4),
+            if (isReceivedMessage) ..[
+              const SizedBox(height: 4),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
-            ),
+            ],
           ],
         ),
         onTap: () {

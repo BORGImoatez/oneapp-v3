@@ -17,6 +17,9 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("SELECT m FROM Message m WHERE m.channel.id = :channelId AND m.isDeleted = false ORDER BY m.createdAt DESC")
     Page<Message> findByChannelIdOrderByCreatedAtDesc(@Param("channelId") Long channelId, Pageable pageable);
 
+    @Query("SELECT m FROM Message m WHERE m.channel.id = :channelId AND m.isDeleted = false ORDER BY m.createdAt DESC")
+    List<Message> findByChannelIdOrderByCreatedAtDesc(@Param("channelId") Long channelId);
+
     @Query("SELECT m FROM Message m WHERE m.channel.id = :channelId AND m.senderId = :senderId AND m.isDeleted = false ORDER BY m.createdAt DESC")
     Page<Message> findByChannelIdAndSenderIdOrderByCreatedAtDesc(
         @Param("channelId") Long channelId, 

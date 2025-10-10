@@ -35,7 +35,6 @@ public class ChannelService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
-    private final FCMService fcmService;
     private final NotificationService notificationService;
 
     @Transactional
@@ -569,12 +568,21 @@ public class ChannelService {
         Long memberCount = channelMemberRepository.countActiveByChannelId(channel.getId());
 
         String displayName = channel.getName();
+        String realUserId = currentUserId;
+
+        // Résoudre l'ID utilisateur si c'est un email
+        if (currentUserId != null && currentUserId.contains("@")) {
+            Optional<Resident> currentUser = residentRepository.findByEmail(currentUserId);
+            if (currentUser.isPresent()) {
+                realUserId = currentUser.get().getIdUsers();
+            }
+        }
 
         // Pour les canaux ONE_TO_ONE, afficher le nom de l'autre utilisateur
-        if (channel.getType() == ChannelType.ONE_TO_ONE && currentUserId != null) {
+        if (channel.getType() == ChannelType.ONE_TO_ONE && realUserId != null) {
             List<ChannelMember> members = channelMemberRepository.findActiveByChannelId(channel.getId());
             for (ChannelMember member : members) {
-                if (!member.getUserId().equals(currentUserId)) {
+                if (!member.getUserId().equals(realUserId)) {
                     Optional<Resident> otherUser = residentRepository.findById(member.getUserId());
                     if (otherUser.isPresent()) {
                         displayName = otherUser.get().getFname() + " " + otherUser.get().getLname();
@@ -582,6 +590,26 @@ public class ChannelService {
                     }
                 }
             }
+        }
+
+        // Récupérer le dernier message du canal
+        MessageDto lastMessage = null;
+        List<be.delomid.oneapp.mschat.mschat.model.Message> messages = messageRepository
+                .findByChannelIdOrderByCreatedAtDesc(channel.getId());
+        if (!messages.isEmpty()) {
+            be.delomid.oneapp.mschat.mschat.model.Message lastMsg = messages.get(0);
+            lastMessage = MessageDto.builder()
+                    .id(lastMsg.getId())
+                    .channelId(lastMsg.getChannel().getId())
+                    .senderId(lastMsg.getSenderId())
+                    .content(lastMsg.getContent())
+                    .type(lastMsg.getType())
+                    .replyToId(lastMsg.getReplyToId())
+                    .isEdited(lastMsg.getIsEdited())
+                    .isDeleted(lastMsg.getIsDeleted())
+                    .createdAt(lastMsg.getCreatedAt())
+                    .updatedAt(lastMsg.getUpdatedAt())
+                    .build();
         }
 
         return ChannelDto.builder()
@@ -597,6 +625,7 @@ public class ChannelService {
                 .createdAt(channel.getCreatedAt())
                 .updatedAt(channel.getUpdatedAt())
                 .memberCount(memberCount)
+                .lastMessage(lastMessage)
                 .build();
     }
 
@@ -649,30 +678,20 @@ public class ChannelService {
                     .filter(token -> token != null && !token.isEmpty())
                     .collect(java.util.stream.Collectors.toList());
 
-            if (!fcmTokens.isEmpty()) {
-                fcmService.sendNotificationToMultipleTokens(
-                        fcmTokens,
+            // Créer des notifications dans la base de données pour chaque résident
+            for (Resident recipient : recipients) {
+                notificationService.createNotification(
+                        recipient.getIdUsers(),
+                        buildingId,
                         notificationTitle,
                         notificationBody,
-                        String.valueOf(channel.getId())
+                        "CHANNEL_CREATED",
+                        channel.getId(),
+                        null,
+                        null
                 );
-                log.info("Sent {} notifications for channel creation", fcmTokens.size());
-
-                for (Resident recipient : recipients) {
-                    notificationService.createNotification(
-                            recipient.getIdUsers(),
-                            buildingId,
-                            notificationTitle,
-                            notificationBody,
-                            "CHANNEL_CREATED",
-                            channel.getId(),
-                            null,
-                            null
-                    );
-                }
-            } else {
-                log.info("No FCM tokens found for building residents");
             }
+            log.info("Created {} notifications for channel creation", recipients.size());
         } catch (Exception e) {
             log.error("Error sending channel creation notifications: {}", e.getMessage(), e);
         }
