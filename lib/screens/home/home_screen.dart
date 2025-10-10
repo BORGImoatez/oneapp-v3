@@ -65,6 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
           BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
+
+          final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+          notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
         }
       });
     }
@@ -81,6 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
     channelProvider.loadChannels(refresh: true);
+
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+    notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
   }
 
 

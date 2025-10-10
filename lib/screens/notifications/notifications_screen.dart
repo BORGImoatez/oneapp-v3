@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/notification_model.dart';
 import '../../services/notification_api_service.dart';
 import '../../services/api_service.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 import '../channels/channels_screen.dart';
 import '../votes/vote_screen.dart';
@@ -71,6 +74,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           );
         }
       });
+
+      if (mounted) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final buildingId = authProvider.user?.buildingId;
+        if (buildingId != null) {
+          final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+          notificationProvider.loadUnreadCountForBuilding(buildingId);
+        }
+      }
     } catch (e) {
       print('Error marking notification as read: $e');
     }
@@ -80,7 +92,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     try {
       await _notificationService.markAllAsRead();
       await _loadNotifications();
+
       if (mounted) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final buildingId = authProvider.user?.buildingId;
+        if (buildingId != null) {
+          final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+          notificationProvider.loadUnreadCountForBuilding(buildingId);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Toutes les notifications ont été marquées comme lues'),
