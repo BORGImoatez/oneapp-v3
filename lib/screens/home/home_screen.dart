@@ -31,11 +31,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     NotificationService().onNotificationReceived = () {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final buildingId = authProvider.user?.buildingId;
-      if (buildingId != null) {
-        final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-        notificationProvider.loadUnreadCountForBuilding(buildingId);
+      if (mounted) {
+        _refreshHomeData();
       }
     };
   }
@@ -103,6 +100,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
     notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
+  }
+
+  void _refreshHomeData() {
+    print('DEBUG: HomeScreen - Refreshing home data after notification');
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentBuildingId = authProvider.user?.buildingId;
+
+    if (currentBuildingId != null) {
+      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      channelProvider.loadChannels(refresh: true);
+
+      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+      notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
+
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
 

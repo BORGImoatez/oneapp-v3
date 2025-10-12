@@ -81,6 +81,8 @@ class MGIApp extends StatelessWidget {
   }
 }
 
+@pragma('vm:entry-point')
 Future<void> handleBackgroundMessage(RemoteMessage message) async {
-  print('Message: $message.notification?.title');
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print('Background message: ${message.notification?.title}');
 }
