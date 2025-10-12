@@ -34,6 +34,7 @@ public class MessageService {
     private final ResidentRepository residentRepository;
     private final FileAttachmentRepository fileAttachmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
+    private final BuildingRepository buildingRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -363,23 +364,16 @@ public class MessageService {
 
             // Construire le titre et le corps selon le type de canal
             if (channel.getType() == ChannelType.ONE_TO_ONE) {
-                // Pour les discussions privées : Nom émetteur + appartement + building
-                String apartmentInfo = "";
-                String buildingInfo = "";
+                // Pour les discussions privées : Nom Prénom du résident + building label
+                String buildingLabel = "";
 
-                if (sender.getApartment() != null) {
-                    apartmentInfo = sender.getApartment().getApartmentLabel();
-                    if (sender.getApartment().getBuilding() != null) {
-                        buildingInfo = sender.getApartment().getBuilding().getBuildingLabel();
-                    }
+                if (sender.getApartment() != null && sender.getApartment().getBuilding() != null) {
+                    buildingLabel = sender.getApartment().getBuilding().getBuildingLabel();
                 }
 
                 notificationTitle = senderName;
-                if (!apartmentInfo.isEmpty()) {
-                    notificationTitle += " - " + apartmentInfo;
-                }
-                if (!buildingInfo.isEmpty()) {
-                    notificationTitle += " (" + buildingInfo + ")";
+                if (!buildingLabel.isEmpty()) {
+                    notificationTitle += " (" + buildingLabel + ")";
                 }
 
                 // Tronquer le message si trop long
@@ -387,8 +381,20 @@ public class MessageService {
                     ? message.getContent().substring(0, 100) + "..."
                     : message.getContent();
             } else {
-                // Pour les canaux : Nom du canal + message
+                // Pour les canaux : Nom du canal + nom du building
+                String buildingLabel = "";
+                if (channel.getBuildingId() != null) {
+                    buildingLabel = buildingRepository.findById(channel.getBuildingId())
+                        .map(Building::getBuildingLabel)
+                        .orElse("");
+                }
+
                 notificationTitle = channel.getName();
+                if (!buildingLabel.isEmpty()) {
+                    notificationTitle += " - " + buildingLabel;
+                }
+
+                // Corps : Qui a envoyé + message
                 notificationBody = senderName + ": " +
                     (message.getContent().length() > 100
                         ? message.getContent().substring(0, 100) + "..."

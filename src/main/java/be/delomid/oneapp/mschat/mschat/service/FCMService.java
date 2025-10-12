@@ -60,38 +60,46 @@ public class FCMService {
     }
 
     public void sendNotificationToToken(String fcmToken, String title, String body, String channelId) {
+        sendPushNotification(fcmToken, title, body, "CHANNEL_CREATED", channelId);
+    }
+
+    public void sendPushNotification(String fcmToken, String title, String body, String type, String channelId) {
         if (fcmToken == null || fcmToken.isEmpty()) {
             log.warn("FCM token is empty, skipping notification");
             return;
         }
 
         try {
-            Message message = Message.builder()
+            Message.Builder messageBuilder = Message.builder()
                     .setToken(fcmToken)
                     .setNotification(Notification.builder()
                             .setTitle(title)
                             .setBody(body)
                             .build())
-                    .putData("channelId", channelId)
-                    .putData("type", "CHANNEL_CREATED")
+                    .putData("type", type != null ? type : "MESSAGE")
                     .setAndroidConfig(AndroidConfig.builder()
                             .setPriority(AndroidConfig.Priority.HIGH)
                             .setNotification(AndroidNotification.builder()
                                     .setSound("default")
-                                    .setChannelId("channel_notifications")
+                                    .setChannelId("high_importance_channel")
                                     .build())
                             .build())
                     .setApnsConfig(ApnsConfig.builder()
                             .setAps(Aps.builder()
                                     .setSound("default")
+                                    .setBadge(1)
                                     .build())
-                            .build())
-                    .build();
+                            .build());
 
+            if (channelId != null) {
+                messageBuilder.putData("channelId", channelId);
+            }
+
+            Message message = messageBuilder.build();
             String response = FirebaseMessaging.getInstance().send(message);
-            log.info("Successfully sent notification to token: {}", response);
+            log.info("Successfully sent push notification: {}", response);
         } catch (Exception e) {
-            log.error("Error sending notification to token {}: {}", fcmToken, e.getMessage());
+            log.error("Error sending push notification to token {}: {}", fcmToken, e.getMessage());
         }
     }
 

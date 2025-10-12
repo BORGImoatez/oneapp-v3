@@ -24,6 +24,7 @@ public class NotificationService {
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
     private final ChannelRepository channelRepository;
+    private final FCMService fcmService;
 
     @Transactional
     public Notification createNotification(String residentId, String buildingId, String title, String body,
@@ -52,7 +53,24 @@ public class NotificationService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return notificationRepository.save(notification);
+        Notification savedNotification = notificationRepository.save(notification);
+
+        if (resident.getFcmToken() != null && !resident.getFcmToken().isEmpty()) {
+            try {
+                fcmService.sendPushNotification(
+                    resident.getFcmToken(),
+                    title,
+                    body,
+                    type,
+                    channelId != null ? channelId.toString() : null
+                );
+                log.info("Push notification sent to resident: {}", residentId);
+            } catch (Exception e) {
+                log.error("Error sending push notification to resident {}: {}", residentId, e.getMessage());
+            }
+        }
+
+        return savedNotification;
     }
 
     public List<NotificationDto> getNotificationsForResident(String residentId) {
