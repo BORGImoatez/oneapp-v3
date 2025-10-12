@@ -251,7 +251,7 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
                   fontWeight: isReceivedMessage ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
-            if (isReceivedMessage) ..[
+            if (isReceivedMessage)
               const SizedBox(height: 4),
               Container(
                 width: 8,
@@ -262,7 +262,7 @@ class _DiscussionsScreenState extends State<DiscussionsScreen> {
                 ),
               ),
             ],
-          ],
+
         ),
         onTap: () {
           Navigator.of(context).push(

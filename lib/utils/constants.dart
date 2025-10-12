@@ -1,7 +1,7 @@
 class Constants {
   // API Configuration
-  static const String baseUrl = 'http://192.168.1.8:9090/api/v1'; // Android emulator
-  static const String wsUrl = 'ws://192.168.1.8:9090/api/v1/ws';
+  static const String baseUrl = 'http://192.168.129.223:9090/api/v1'; // Android emulator
+  static const String wsUrl = 'ws://192.168.129.223:9090/api/v1/ws';
 
   // Storage Keys
   static const String tokenKey = 'auth_token';

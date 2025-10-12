@@ -49,7 +49,7 @@ public class FileService {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Construire l'URL complète pour l'accès au fichier
-            String baseUrl = "http://192.168.1.8:9090/api/v1/files/";
+            String baseUrl = "http://192.168.129.223:9090/api/v1/files/";
             String fileUrl = baseUrl + filename;
             String downloadUrl = baseUrl + "download/" + filename;
 

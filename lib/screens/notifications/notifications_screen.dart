@@ -134,7 +134,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const VoteScreen(),
+          builder: (context) => const ChannelsScreen(),
         ),
       );
     } else if (notification.documentId != null) {
@@ -182,7 +182,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: AppTheme.primary,
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         actions: [
           if (_notifications.any((n) => !n.isRead))

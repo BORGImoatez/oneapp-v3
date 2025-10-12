@@ -27,7 +27,7 @@ public class NotificationController {
     @GetMapping
     @Operation(summary = "Récupérer toutes les notifications de l'utilisateur connecté")
     public ResponseEntity<List<NotificationDto>> getMyNotifications() {
-        String userEmail = SecurityContextUtil.getCurrentUserEmail();
+        String userEmail = SecurityContextUtil.getCurrentUserId();
         String residentId = SecurityContextUtil.getCurrentUserId();
         log.debug("Getting notifications for user: {}", userEmail);
 
@@ -38,7 +38,7 @@ public class NotificationController {
     @GetMapping("/building/{buildingId}")
     @Operation(summary = "Récupérer les notifications d'un bâtiment spécifique")
     public ResponseEntity<List<NotificationDto>> getNotificationsByBuilding(@PathVariable String buildingId) {
-        String userEmail = SecurityContextUtil.getCurrentUserEmail();
+        String userEmail = SecurityContextUtil.getCurrentUserId();
         String residentId = SecurityContextUtil.getCurrentUserId();
         log.debug("Getting notifications for user: {} and building: {}", userEmail, buildingId);
 

@@ -65,7 +65,7 @@ public class MessageService {
             if (fileAttachment != null) {
                 // Pour les images, utiliser l'URL complète
                 if (fileAttachment.getFileType() == FileType.IMAGE) {
-                    content = "http://192.168.1.8:9090/api/v1/files/" + fileAttachment.getStoredFilename();
+                    content = "http://192.168.129.223:9090/api/v1/files/" + fileAttachment.getStoredFilename();
                 } else {
                     content = fileAttachment.getOriginalFilename();
                 }
@@ -263,7 +263,7 @@ public class MessageService {
         FileAttachmentDto fileAttachmentDto = null;
         if (message.getFileAttachment() != null) {
             FileAttachment file = message.getFileAttachment();
-            String baseUrl = "http://192.168.1.8:9090/api/v1/files/";
+            String baseUrl = "http://192.168.129.223:9090/api/v1/files/";
 
             fileAttachmentDto = FileAttachmentDto.builder()
                     .id(file.getId())
@@ -370,7 +370,7 @@ public class MessageService {
                 if (sender.getApartment() != null) {
                     apartmentInfo = sender.getApartment().getApartmentLabel();
                     if (sender.getApartment().getBuilding() != null) {
-                        buildingInfo = sender.getApartment().getBuilding().getName();
+                        buildingInfo = sender.getApartment().getBuilding().getBuildingLabel();
                     }
                 }
 
