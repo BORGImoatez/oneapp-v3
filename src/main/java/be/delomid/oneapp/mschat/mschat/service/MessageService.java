@@ -34,6 +34,7 @@ public class MessageService {
     private final ResidentRepository residentRepository;
     private final FileAttachmentRepository fileAttachmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public MessageDto sendMessage(SendMessageRequest request, String senderId) {
@@ -84,6 +85,9 @@ public class MessageService {
 
         message = messageRepository.save(message);
         log.debug("Message saved with ID: {}", message.getId());
+
+        // Créer des notifications pour tous les membres du canal sauf l'émetteur
+        createNotificationsForMessage(message, senderId, channel);
 
         return convertToDto(message);
     }
@@ -336,5 +340,94 @@ public class MessageService {
                 .createdAt(message.getCreatedAt())
                 .messageContent(message.getContent())
                 .build();
+    }
+
+    private void createNotificationsForMessage(Message message, String senderId, Channel channel) {
+        try {
+            // Récupérer tous les membres actifs du canal sauf l'émetteur
+            List<ChannelMember> members = channelMemberRepository.findActiveByChannelId(channel.getId());
+
+            // Récupérer les informations de l'émetteur
+            Resident sender = residentRepository.findById(senderId)
+                    .or(() -> residentRepository.findByEmail(senderId))
+                    .orElse(null);
+
+            if (sender == null) {
+                log.warn("Sender not found for notification: {}", senderId);
+                return;
+            }
+
+            String senderName = sender.getFname() + " " + sender.getLname();
+            String notificationTitle;
+            String notificationBody;
+
+            // Construire le titre et le corps selon le type de canal
+            if (channel.getType() == ChannelType.ONE_TO_ONE) {
+                // Pour les discussions privées : Nom émetteur + appartement + building
+                String apartmentInfo = "";
+                String buildingInfo = "";
+
+                if (sender.getApartment() != null) {
+                    apartmentInfo = sender.getApartment().getApartmentLabel();
+                    if (sender.getApartment().getBuilding() != null) {
+                        buildingInfo = sender.getApartment().getBuilding().getName();
+                    }
+                }
+
+                notificationTitle = senderName;
+                if (!apartmentInfo.isEmpty()) {
+                    notificationTitle += " - " + apartmentInfo;
+                }
+                if (!buildingInfo.isEmpty()) {
+                    notificationTitle += " (" + buildingInfo + ")";
+                }
+
+                // Tronquer le message si trop long
+                notificationBody = message.getContent().length() > 100
+                    ? message.getContent().substring(0, 100) + "..."
+                    : message.getContent();
+            } else {
+                // Pour les canaux : Nom du canal + message
+                notificationTitle = channel.getName();
+                notificationBody = senderName + ": " +
+                    (message.getContent().length() > 100
+                        ? message.getContent().substring(0, 100) + "..."
+                        : message.getContent());
+            }
+
+            // Créer une notification pour chaque membre (sauf l'émetteur)
+            for (ChannelMember member : members) {
+                if (!member.getUserId().equals(senderId) && !member.getUserId().equals(sender.getIdUsers())) {
+                    try {
+                        Resident recipient = residentRepository.findById(member.getUserId()).orElse(null);
+                        if (recipient == null) continue;
+
+                        // Déterminer le buildingId pour la notification
+                        String buildingId = channel.getBuildingId();
+                        if (buildingId == null && recipient.getApartment() != null && recipient.getApartment().getBuilding() != null) {
+                            buildingId = recipient.getApartment().getBuilding().getBuildingId();
+                        }
+
+                        if (buildingId != null) {
+                            notificationService.createNotification(
+                                member.getUserId(),
+                                buildingId,
+                                notificationTitle,
+                                notificationBody,
+                                "MESSAGE",
+                                channel.getId(),
+                                null,
+                                null
+                            );
+                            log.debug("Notification created for user {} in channel {}", member.getUserId(), channel.getId());
+                        }
+                    } catch (Exception e) {
+                        log.error("Error creating notification for member {}: {}", member.getUserId(), e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error creating notifications for message {}: {}", message.getId(), e.getMessage(), e);
+        }
     }
 }
