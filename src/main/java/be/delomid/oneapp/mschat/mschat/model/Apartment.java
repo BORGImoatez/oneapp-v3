@@ -52,7 +52,7 @@ public class Apartment {
     @JoinColumn(name = "building_id", nullable = false)
     private Building building;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resident_id")
     private Resident resident;
 
