@@ -374,11 +374,16 @@ public class ChannelService {
 
     private String getCurrentUserBuildingId(Resident user) {
         try {
-            // Récupérer le building depuis ResidentBuilding
+            // D'abord essayer de récupérer le building depuis le JWT
+            String buildingIdFromJwt = getCurrentBuildingFromContext();
+            if (buildingIdFromJwt != null) {
+                return buildingIdFromJwt;
+            }
+
+            // Fallback: Récupérer le building depuis ResidentBuilding
             List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
             if (!userBuildings.isEmpty()) {
                 // Si l'utilisateur a plusieurs buildings, on prend le premier
-                // Idéalement, le buildingId devrait toujours venir du JWT
                 return userBuildings.get(0).getBuilding().getBuildingId();
             }
         } catch (Exception e) {

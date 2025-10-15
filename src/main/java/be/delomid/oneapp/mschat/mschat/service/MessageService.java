@@ -144,6 +144,7 @@ public class MessageService {
 
         // Si le canal n'a pas de bâtiment spécifique (PUBLIC), autoriser l'accès
         if (channel.getBuildingId() == null || channel.getType() == ChannelType.PUBLIC) {
+            log.debug("Channel {} is PUBLIC or has no building, access granted", channelId);
             return;
         }
 
@@ -154,21 +155,37 @@ public class MessageService {
 
         String currentBuildingId = getCurrentUserBuildingId(user);
 
+        log.debug("Validating channel access - Channel ID: {}, Channel Building: {}, User: {}, User Building: {}",
+                  channelId, channel.getBuildingId(), userId, currentBuildingId);
+
         // Vérifier que le canal appartient au bâtiment actuel de l'utilisateur
         if (currentBuildingId == null || !currentBuildingId.equals(channel.getBuildingId())) {
+            log.warn("Access denied - Channel building {} does not match user building {}",
+                     channel.getBuildingId(), currentBuildingId);
             throw new UnauthorizedAccessException("Channel does not belong to user's current building");
         }
+
+        log.debug("Channel access validated successfully for user {} in building {}", userId, currentBuildingId);
     }
 
     private String getCurrentUserBuildingId(Resident user) {
-        // Récupérer le building depuis ResidentBuilding
-        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
-        if (!userBuildings.isEmpty()) {
-            // Si l'utilisateur a plusieurs buildings, on prend le premier
-            // Dans le futur, on devrait utiliser le buildingId depuis le JWT
-            return userBuildings.get(0).getBuilding().getBuildingId();
+        // D'abord essayer de récupérer le building depuis le JWT
+        String buildingIdFromJwt = getCurrentBuildingFromContext();
+        if (buildingIdFromJwt != null) {
+            log.debug("Building ID extracted from JWT: {}", buildingIdFromJwt);
+            return buildingIdFromJwt;
         }
 
+        // Fallback: Récupérer le building depuis ResidentBuilding
+        List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
+        if (!userBuildings.isEmpty()) {
+            String buildingId = userBuildings.get(0).getBuilding().getBuildingId();
+            log.debug("Building ID from ResidentBuilding fallback: {} (user has {} buildings)",
+                      buildingId, userBuildings.size());
+            return buildingId;
+        }
+
+        log.warn("No building found for user: {}", user.getIdUsers());
         return null;
     }
 
