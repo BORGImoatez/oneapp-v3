@@ -92,72 +92,87 @@ public class DataInitializationService implements CommandLineRunner {
     }
 
     private void initializeTestData() {
-        // Créer un immeuble de test
         if (buildingRepository.count() == 0) {
-            log.info("Creating test building and residents...");
+            log.info("Creating test buildings and residents...");
 
-            Country france = countryRepository.findByCodeIso3("FRA");
-            if (france == null) {
-                france = countryRepository.findAll().get(0); // Prendre le premier pays disponible
+            Country belgium = countryRepository.findByCodeIso3("BEL");
+            if (belgium == null) {
+                belgium = countryRepository.findAll().get(0);
             }
 
-            // Créer une adresse de test
-            Address testAddress = Address.builder()
-                    .address("123 Rue de la Paix")
-                    .codePostal("75001")
-                    .ville("Paris")
-                    .pays(france)
+            // ==================== BUILDING 1: DELOMID DM LIEGE ====================
+
+            Address addressLiege = Address.builder()
+                    .address("Rue de la Régence 1")
+                    .codePostal("4000")
+                    .ville("Liège")
+                    .pays(belgium)
                     .build();
 
-            // Créer un immeuble de test
-            Building testBuilding = Building.builder()
-                    .buildingId("FRA-2024-TEST")
-                    .buildingLabel("Résidence Test")
-                    .buildingNumber("123")
+            Building buildingLiege = Building.builder()
+                    .buildingId("BEL-2024-DM-LIEGE")
+                    .buildingLabel("Delomid DM Liège")
+                    .buildingNumber("1")
                     .yearOfConstruction(2020)
-                    .address(testAddress)
+                    .address(addressLiege)
                     .build();
 
-            testBuilding = buildingRepository.save(testBuilding);
+            buildingLiege = buildingRepository.save(buildingLiege);
+            log.info("Building 1 created: Delomid DM Liège");
 
-            // Créer des appartements de test
-            Apartment apartment1 = Apartment.builder()
-                    .idApartment("FRA-2024-TEST-A101")
+            // Créer 3 appartements pour Liège
+            Apartment aptLiege1 = Apartment.builder()
+                    .idApartment("BEL-2024-DM-LIEGE-A101")
                     .apartmentLabel("Appartement 101")
                     .apartmentNumber("101")
                     .apartmentFloor(1)
-                    .livingAreaSurface(new BigDecimal("65.5"))
+                    .livingAreaSurface(new BigDecimal("75.0"))
                     .numberOfRooms(3)
                     .numberOfBedrooms(2)
                     .haveBalconyOrTerrace(true)
                     .isFurnished(false)
-                    .building(testBuilding)
+                    .building(buildingLiege)
                     .build();
 
-            Apartment apartment2 = Apartment.builder()
-                    .idApartment("FRA-2024-TEST-A102")
+            Apartment aptLiege2 = Apartment.builder()
+                    .idApartment("BEL-2024-DM-LIEGE-A102")
                     .apartmentLabel("Appartement 102")
                     .apartmentNumber("102")
                     .apartmentFloor(1)
-                    .livingAreaSurface(new BigDecimal("58.0"))
+                    .livingAreaSurface(new BigDecimal("65.0"))
                     .numberOfRooms(2)
                     .numberOfBedrooms(1)
                     .haveBalconyOrTerrace(false)
                     .isFurnished(true)
-                    .building(testBuilding)
+                    .building(buildingLiege)
                     .build();
 
-            apartment1 = apartmentRepository.save(apartment1);
-            apartment2 = apartmentRepository.save(apartment2);
+            Apartment aptLiege3 = Apartment.builder()
+                    .idApartment("BEL-2024-DM-LIEGE-A201")
+                    .apartmentLabel("Appartement 201")
+                    .apartmentNumber("201")
+                    .apartmentFloor(2)
+                    .livingAreaSurface(new BigDecimal("80.0"))
+                    .numberOfRooms(4)
+                    .numberOfBedrooms(3)
+                    .haveBalconyOrTerrace(true)
+                    .isFurnished(false)
+                    .building(buildingLiege)
+                    .build();
 
-            // Créer des résidents de test
-            Resident resident1 = Resident.builder()
+            aptLiege1 = apartmentRepository.save(aptLiege1);
+            aptLiege2 = apartmentRepository.save(aptLiege2);
+            aptLiege3 = apartmentRepository.save(aptLiege3);
+            log.info("3 apartments created for Delomid DM Liège");
+
+            // Créer les résidents pour Liège
+            Resident siamak = Resident.builder()
                     .idUsers(UUID.randomUUID().toString())
-                    .fname("Moatez")
-                    .lname("BORGI")
-                    .email("moatezelborgi@gmail.com")
+                    .fname("Siamak")
+                    .lname("Miandarbandi")
+                    .email("siamak.miandarbandi@delomid.com")
                     .password(passwordEncoder.encode("password123"))
-                    .phoneNumber("+33123456789")
+                    .phoneNumber("+32470123456")
                     .role(UserRole.RESIDENT)
                     .accountStatus(AccountStatus.ACTIVE)
                     .isEnabled(true)
@@ -166,115 +181,245 @@ public class DataInitializationService implements CommandLineRunner {
                     .isCredentialsNonExpired(true)
                     .build();
 
-            Resident resident2 = Resident.builder()
+            Resident moatezLiege = Resident.builder()
                     .idUsers(UUID.randomUUID().toString())
-                    .fname("Test")
-                    .lname("Test")
-                    .email("moatezborgi@softverse.com")
+                    .fname("Moatez")
+                    .lname("Borgi")
+                    .email("moatez.borgi@delomid.com")
                     .password(passwordEncoder.encode("password123"))
-                    .phoneNumber("+33987654321")
+                    .phoneNumber("+32470234567")
                     .role(UserRole.RESIDENT)
                     .accountStatus(AccountStatus.ACTIVE)
                     .isEnabled(true)
                     .isAccountNonExpired(true)
-                    .isAccountNonLocked(true).build();
-            resident1 = residentRepository.save(resident1);
-
-            resident2 = residentRepository.save(resident2);
-
-            // Assigner les résidents aux appartements
-            apartment1.setResident(resident1);
-            apartment2.setResident(resident2);
-            apartmentRepository.save(apartment1);
-            apartmentRepository.save(apartment2);
-
-            // Créer les relations ResidentBuilding
-            ResidentBuilding residentBuilding1 = ResidentBuilding.builder()
-                    .resident(resident1)
-                    .building(testBuilding)
-                    .apartment(apartment1)
-                    .roleInBuilding(UserRole.RESIDENT)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
                     .build();
 
-            ResidentBuilding residentBuilding2 = ResidentBuilding.builder()
-                    .resident(resident2)
-                    .building(testBuilding)
-                    .apartment(apartment2)
-                    .roleInBuilding(UserRole.RESIDENT)
+            Resident farzanehLiege = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Farzaneh")
+                    .lname("Hajjel")
+                    .email("farzaneh.hajjel@delomid.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+32470345678")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
                     .build();
 
-            residentBuildingRepository.save(residentBuilding1);
-            residentBuildingRepository.save(residentBuilding2);
+            siamak = residentRepository.save(siamak);
+            moatezLiege = residentRepository.save(moatezLiege);
+            farzanehLiege = residentRepository.save(farzanehLiege);
+            log.info("3 residents created for Delomid DM Liège");
 
-            // Créer un deuxième bâtiment pour tester le multi-bâtiment
-            Building testBuilding2 = Building.builder()
-                    .buildingId("FRA-2024-TEST2")
-                    .buildingLabel("Résidence Test 2")
-                    .buildingNumber("456")
-                    .yearOfConstruction(2022)
-                    .address(Address.builder()
-                            .address("456 Avenue des Champs")
-                            .codePostal("75008")
-                            .ville("Paris")
-                            .pays(france)
-                            .build())
-                    .build();
+            // Assigner les résidents aux appartements de Liège
+            aptLiege1.setResident(siamak);
+            aptLiege2.setResident(moatezLiege);
+            aptLiege3.setResident(farzanehLiege);
+            apartmentRepository.save(aptLiege1);
+            apartmentRepository.save(aptLiege2);
+            apartmentRepository.save(aptLiege3);
 
-            testBuilding2 = buildingRepository.save(testBuilding2);
-
-            // Ajouter resident1 comme admin du deuxième bâtiment
-            ResidentBuilding residentBuilding1Admin = ResidentBuilding.builder()
-                    .resident(resident1)
-                    .building(testBuilding2)
+            // Créer les relations ResidentBuilding pour Liège (Siamak = ADMIN)
+            ResidentBuilding rbSiamakLiege = ResidentBuilding.builder()
+                    .resident(siamak)
+                    .building(buildingLiege)
+                    .apartment(aptLiege1)
                     .roleInBuilding(UserRole.BUILDING_ADMIN)
                     .build();
 
-            residentBuildingRepository.save(residentBuilding1Admin);
-
-            // Créer un troisième bâtiment pour tester avec resident1 comme résident simple
-            Building testBuilding3 = Building.builder()
-                    .buildingId("FRA-2024-TEST3")
-                    .buildingLabel("Résidence Test 3")
-                    .buildingNumber("789")
-                    .yearOfConstruction(2023)
-                    .address(Address.builder()
-                            .address("789 Boulevard Saint-Germain")
-                            .codePostal("75006")
-                            .ville("Paris")
-                            .pays(france)
-                            .build())
+            ResidentBuilding rbMoatezLiege = ResidentBuilding.builder()
+                    .resident(moatezLiege)
+                    .building(buildingLiege)
+                    .apartment(aptLiege2)
+                    .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
-            testBuilding3 = buildingRepository.save(testBuilding3);
+            ResidentBuilding rbFarzanehLiege = ResidentBuilding.builder()
+                    .resident(farzanehLiege)
+                    .building(buildingLiege)
+                    .apartment(aptLiege3)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
 
-            // Créer un appartement dans le troisième bâtiment
-            Apartment apartment3 = Apartment.builder()
-                    .idApartment("FRA-2024-TEST3-A201")
+            residentBuildingRepository.save(rbSiamakLiege);
+            residentBuildingRepository.save(rbMoatezLiege);
+            residentBuildingRepository.save(rbFarzanehLiege);
+            log.info("ResidentBuilding relations created for Liège (Siamak = ADMIN)");
+
+            // ==================== BUILDING 2: DELOMID IT BRUXELLES ====================
+
+            Address addressBruxelles = Address.builder()
+                    .address("Avenue Louise 100")
+                    .codePostal("1050")
+                    .ville("Bruxelles")
+                    .pays(belgium)
+                    .build();
+
+            Building buildingBruxelles = Building.builder()
+                    .buildingId("BEL-2024-IT-BRUXELLES")
+                    .buildingLabel("Delomid IT Bruxelles")
+                    .buildingNumber("100")
+                    .yearOfConstruction(2021)
+                    .address(addressBruxelles)
+                    .build();
+
+            buildingBruxelles = buildingRepository.save(buildingBruxelles);
+            log.info("Building 2 created: Delomid IT Bruxelles");
+
+            // Créer 4 appartements pour Bruxelles
+            Apartment aptBxl1 = Apartment.builder()
+                    .idApartment("BEL-2024-IT-BRUXELLES-A101")
+                    .apartmentLabel("Appartement 101")
+                    .apartmentNumber("101")
+                    .apartmentFloor(1)
+                    .livingAreaSurface(new BigDecimal("70.0"))
+                    .numberOfRooms(3)
+                    .numberOfBedrooms(2)
+                    .haveBalconyOrTerrace(true)
+                    .isFurnished(false)
+                    .building(buildingBruxelles)
+                    .build();
+
+            Apartment aptBxl2 = Apartment.builder()
+                    .idApartment("BEL-2024-IT-BRUXELLES-A102")
+                    .apartmentLabel("Appartement 102")
+                    .apartmentNumber("102")
+                    .apartmentFloor(1)
+                    .livingAreaSurface(new BigDecimal("65.0"))
+                    .numberOfRooms(2)
+                    .numberOfBedrooms(1)
+                    .haveBalconyOrTerrace(false)
+                    .isFurnished(true)
+                    .building(buildingBruxelles)
+                    .build();
+
+            Apartment aptBxl3 = Apartment.builder()
+                    .idApartment("BEL-2024-IT-BRUXELLES-A201")
                     .apartmentLabel("Appartement 201")
                     .apartmentNumber("201")
                     .apartmentFloor(2)
-                    .livingAreaSurface(new BigDecimal("75.0"))
+                    .livingAreaSurface(new BigDecimal("85.0"))
                     .numberOfRooms(4)
                     .numberOfBedrooms(3)
                     .haveBalconyOrTerrace(true)
                     .isFurnished(false)
-                    .building(testBuilding3)
+                    .building(buildingBruxelles)
                     .build();
 
-            apartment3 = apartmentRepository.save(apartment3);
+            Apartment aptBxl4 = Apartment.builder()
+                    .idApartment("BEL-2024-IT-BRUXELLES-A202")
+                    .apartmentLabel("Appartement 202")
+                    .apartmentNumber("202")
+                    .apartmentFloor(2)
+                    .livingAreaSurface(new BigDecimal("60.0"))
+                    .numberOfRooms(2)
+                    .numberOfBedrooms(1)
+                    .haveBalconyOrTerrace(true)
+                    .isFurnished(true)
+                    .building(buildingBruxelles)
+                    .build();
 
-            // Ajouter resident1 comme résident du troisième bâtiment
-            ResidentBuilding residentBuilding1Resident = ResidentBuilding.builder()
-                    .resident(resident1)
-                    .building(testBuilding3)
-                    .apartment(apartment3)
+            aptBxl1 = apartmentRepository.save(aptBxl1);
+            aptBxl2 = apartmentRepository.save(aptBxl2);
+            aptBxl3 = apartmentRepository.save(aptBxl3);
+            aptBxl4 = apartmentRepository.save(aptBxl4);
+            log.info("4 apartments created for Delomid IT Bruxelles");
+
+            // Créer les résidents pour Bruxelles
+            Resident amir = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Amir")
+                    .lname("Miandarbandi")
+                    .email("amir.miandarbandi@delomid.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+32470456789")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
+            Resident somayyeh = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Somayyeh")
+                    .lname("Gholami")
+                    .email("somayyeh.gholami@delomid.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+32470567890")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
+            amir = residentRepository.save(amir);
+            somayyeh = residentRepository.save(somayyeh);
+            log.info("5 residents created/reused for Delomid IT Bruxelles");
+
+            // Assigner les résidents aux appartements de Bruxelles
+            aptBxl1.setResident(amir);
+            aptBxl2.setResident(moatezLiege);
+            aptBxl3.setResident(siamak);
+            aptBxl4.setResident(somayyeh);
+            apartmentRepository.save(aptBxl1);
+            apartmentRepository.save(aptBxl2);
+            apartmentRepository.save(aptBxl3);
+            apartmentRepository.save(aptBxl4);
+
+            // Créer les relations ResidentBuilding pour Bruxelles (Amir = ADMIN)
+            ResidentBuilding rbAmirBxl = ResidentBuilding.builder()
+                    .resident(amir)
+                    .building(buildingBruxelles)
+                    .apartment(aptBxl1)
+                    .roleInBuilding(UserRole.BUILDING_ADMIN)
+                    .build();
+
+            ResidentBuilding rbMoatezBxl = ResidentBuilding.builder()
+                    .resident(moatezLiege)
+                    .building(buildingBruxelles)
+                    .apartment(aptBxl2)
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
-            residentBuildingRepository.save(residentBuilding1Resident);
+            ResidentBuilding rbSiamakBxl = ResidentBuilding.builder()
+                    .resident(siamak)
+                    .building(buildingBruxelles)
+                    .apartment(aptBxl3)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
 
-            // ==================== RÉSUMÉ ====================
+            ResidentBuilding rbSomayyehBxl = ResidentBuilding.builder()
+                    .resident(somayyeh)
+                    .building(buildingBruxelles)
+                    .apartment(aptBxl4)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
 
+            ResidentBuilding rbFarzanehBxl = ResidentBuilding.builder()
+                    .resident(farzanehLiege)
+                    .building(buildingBruxelles)
+                    .roleInBuilding(UserRole.RESIDENT)
+                    .build();
+
+            residentBuildingRepository.save(rbAmirBxl);
+            residentBuildingRepository.save(rbMoatezBxl);
+            residentBuildingRepository.save(rbSiamakBxl);
+            residentBuildingRepository.save(rbSomayyehBxl);
+            residentBuildingRepository.save(rbFarzanehBxl);
+            log.info("ResidentBuilding relations created for Bruxelles (Amir = ADMIN)");
+
+            log.info("==================== INITIALIZATION COMPLETE ====================");
+            log.info("Building 1: Delomid DM Liège - 3 apartments, 3 residents (Siamak = ADMIN)");
+            log.info("Building 2: Delomid IT Bruxelles - 4 apartments, 5 residents (Amir = ADMIN)");
         }
     }
 }
