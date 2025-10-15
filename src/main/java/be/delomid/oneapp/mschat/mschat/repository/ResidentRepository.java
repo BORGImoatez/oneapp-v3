@@ -19,16 +19,16 @@ public interface ResidentRepository extends JpaRepository<Resident, String> {
 
     Optional<Resident> findByEmail(String email);
 
-    @Query("SELECT r FROM Resident r WHERE r.apartment.building.buildingId = :buildingId")
+    @Query("SELECT DISTINCT r FROM Resident r JOIN r.residentBuildings rb WHERE rb.building.buildingId = :buildingId AND rb.isActive = true")
     List<Resident> findByBuildingId(@Param("buildingId") String buildingId);
 
-    @Query("SELECT r FROM Resident r WHERE r.apartment.building.buildingId = :buildingId")
+    @Query("SELECT DISTINCT r FROM Resident r JOIN r.residentBuildings rb WHERE rb.building.buildingId = :buildingId AND rb.isActive = true")
     Page<Resident> findByBuildingId(@Param("buildingId") String buildingId, Pageable pageable);
 
     @Query("SELECT r FROM Resident r WHERE r.fname LIKE %:name% OR r.lname LIKE %:name%")
     Page<Resident> findByNameContaining(@Param("name") String name, Pageable pageable);
 
-    @Query("SELECT r FROM Resident r WHERE r.apartment.apartmentFloor = :floor AND r.apartment.building.buildingId = :buildingId")
+    @Query("SELECT DISTINCT r FROM Resident r JOIN r.residentBuildings rb WHERE rb.apartment.apartmentFloor = :floor AND rb.building.buildingId = :buildingId AND rb.isActive = true")
     List<Resident> findByFloorAndBuildingId(@Param("floor") Integer floor, @Param("buildingId") String buildingId);
     
     @Query("SELECT r FROM Resident r WHERE r.role = :role AND r.managedBuildingId = :buildingId")
