@@ -161,15 +161,12 @@ public class MessageService {
     }
 
     private String getCurrentUserBuildingId(Resident user) {
-        // Chercher dans les relations ResidentBuilding en priorité
+        // Récupérer le building depuis ResidentBuilding
         List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
         if (!userBuildings.isEmpty()) {
+            // Si l'utilisateur a plusieurs buildings, on prend le premier
+            // Dans le futur, on devrait utiliser le buildingId depuis le JWT
             return userBuildings.get(0).getBuilding().getBuildingId();
-        }
-
-        // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-        if (user.getApartment() != null) {
-            return user.getApartment().getBuilding().getBuildingId();
         }
 
         return null;
@@ -367,8 +364,11 @@ public class MessageService {
                 // Pour les discussions privées : Nom Prénom du résident + building label
                 String buildingLabel = "";
 
-                if (sender.getApartment() != null && sender.getApartment().getBuilding() != null) {
-                    buildingLabel = sender.getApartment().getBuilding().getBuildingLabel();
+                // Récupérer le building depuis le channel ou ResidentBuilding
+                if (channel.getBuildingId() != null) {
+                    buildingLabel = buildingRepository.findById(channel.getBuildingId())
+                        .map(Building::getBuildingLabel)
+                        .orElse("");
                 }
 
                 notificationTitle = senderName;
@@ -410,8 +410,12 @@ public class MessageService {
 
                         // Déterminer le buildingId pour la notification
                         String buildingId = channel.getBuildingId();
-                        if (buildingId == null && recipient.getApartment() != null && recipient.getApartment().getBuilding() != null) {
-                            buildingId = recipient.getApartment().getBuilding().getBuildingId();
+                        if (buildingId == null) {
+                            // Essayer de récupérer depuis ResidentBuilding
+                            List<ResidentBuilding> recipientBuildings = residentBuildingRepository.findActiveByResidentId(recipient.getIdUsers());
+                            if (!recipientBuildings.isEmpty()) {
+                                buildingId = recipientBuildings.get(0).getBuilding().getBuildingId();
+                            }
                         }
 
                         if (buildingId != null) {

@@ -374,15 +374,12 @@ public class ChannelService {
 
     private String getCurrentUserBuildingId(Resident user) {
         try {
-            // Chercher dans les relations ResidentBuilding en priorité
+            // Récupérer le building depuis ResidentBuilding
             List<ResidentBuilding> userBuildings = residentBuildingRepository.findActiveByResidentId(user.getIdUsers());
             if (!userBuildings.isEmpty()) {
+                // Si l'utilisateur a plusieurs buildings, on prend le premier
+                // Idéalement, le buildingId devrait toujours venir du JWT
                 return userBuildings.get(0).getBuilding().getBuildingId();
-            }
-
-            // Fallback: Si l'utilisateur a un appartement, utiliser le bâtiment de l'appartement
-            if (user.getApartment() != null && user.getApartment().getBuilding() != null) {
-                return user.getApartment().getBuilding().getBuildingId();
             }
         } catch (Exception e) {
             log.warn("Error getting user building ID for user {}: {}", user.getIdUsers(), e.getMessage());
