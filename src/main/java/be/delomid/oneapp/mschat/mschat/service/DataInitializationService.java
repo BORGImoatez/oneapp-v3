@@ -346,6 +346,36 @@ public class DataInitializationService implements CommandLineRunner {
                     .isCredentialsNonExpired(true)
                     .build();
 
+            Resident moatezBxl = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Moatez")
+                    .lname("Borgi")
+                    .email("moatez.borgi.bxl@delomid.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+32470678901")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
+            Resident farzanehBxl = Resident.builder()
+                    .idUsers(UUID.randomUUID().toString())
+                    .fname("Farzaneh")
+                    .lname("Hajjel")
+                    .email("farzaneh.hajjel.bxl@delomid.com")
+                    .password(passwordEncoder.encode("password123"))
+                    .phoneNumber("+32470789012")
+                    .role(UserRole.RESIDENT)
+                    .accountStatus(AccountStatus.ACTIVE)
+                    .isEnabled(true)
+                    .isAccountNonExpired(true)
+                    .isAccountNonLocked(true)
+                    .isCredentialsNonExpired(true)
+                    .build();
+
             Resident somayyeh = Resident.builder()
                     .idUsers(UUID.randomUUID().toString())
                     .fname("Somayyeh")
@@ -362,19 +392,22 @@ public class DataInitializationService implements CommandLineRunner {
                     .build();
 
             amir = residentRepository.save(amir);
+            moatezBxl = residentRepository.save(moatezBxl);
+            farzanehBxl = residentRepository.save(farzanehBxl);
             somayyeh = residentRepository.save(somayyeh);
-            log.info("5 residents created/reused for Delomid IT Bruxelles");
+            log.info("4 residents created for Delomid IT Bruxelles");
 
             // Assigner les résidents aux appartements de Bruxelles
-            // Note: Moatez, Siamak et Farzaneh ont déjà un appartement à Liège
-            // Seuls Amir et Somayyeh ont un appartement à Bruxelles
             aptBxl1.setResident(amir);
+            aptBxl2.setResident(moatezBxl);
+            aptBxl3.setResident(farzanehBxl);
             aptBxl4.setResident(somayyeh);
             apartmentRepository.save(aptBxl1);
+            apartmentRepository.save(aptBxl2);
+            apartmentRepository.save(aptBxl3);
             apartmentRepository.save(aptBxl4);
 
             // Créer les relations ResidentBuilding pour Bruxelles (Amir = ADMIN)
-            // Amir a un appartement à Bruxelles (aptBxl1)
             ResidentBuilding rbAmirBxl = ResidentBuilding.builder()
                     .resident(amir)
                     .building(buildingBruxelles)
@@ -382,21 +415,20 @@ public class DataInitializationService implements CommandLineRunner {
                     .roleInBuilding(UserRole.BUILDING_ADMIN)
                     .build();
 
-            // Moatez est résident à Bruxelles mais son appartement principal est à Liège
             ResidentBuilding rbMoatezBxl = ResidentBuilding.builder()
-                    .resident(moatezLiege)
+                    .resident(moatezBxl)
                     .building(buildingBruxelles)
+                    .apartment(aptBxl2)
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
-            // Siamak est résident à Bruxelles mais son appartement principal est à Liège
-            ResidentBuilding rbSiamakBxl = ResidentBuilding.builder()
-                    .resident(siamak)
+            ResidentBuilding rbFarzanehBxl = ResidentBuilding.builder()
+                    .resident(farzanehBxl)
                     .building(buildingBruxelles)
+                    .apartment(aptBxl3)
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
-            // Somayyeh a un appartement à Bruxelles (aptBxl4)
             ResidentBuilding rbSomayyehBxl = ResidentBuilding.builder()
                     .resident(somayyeh)
                     .building(buildingBruxelles)
@@ -404,23 +436,15 @@ public class DataInitializationService implements CommandLineRunner {
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
-            // Farzaneh est résidente à Bruxelles mais son appartement principal est à Liège
-            ResidentBuilding rbFarzanehBxl = ResidentBuilding.builder()
-                    .resident(farzanehLiege)
-                    .building(buildingBruxelles)
-                    .roleInBuilding(UserRole.RESIDENT)
-                    .build();
-
             residentBuildingRepository.save(rbAmirBxl);
             residentBuildingRepository.save(rbMoatezBxl);
-            residentBuildingRepository.save(rbSiamakBxl);
-            residentBuildingRepository.save(rbSomayyehBxl);
             residentBuildingRepository.save(rbFarzanehBxl);
+            residentBuildingRepository.save(rbSomayyehBxl);
             log.info("ResidentBuilding relations created for Bruxelles (Amir = ADMIN)");
 
             log.info("==================== INITIALIZATION COMPLETE ====================");
             log.info("Building 1: Delomid DM Liège - 3 apartments, 3 residents (Siamak = ADMIN)");
-            log.info("Building 2: Delomid IT Bruxelles - 4 apartments, 5 residents (Amir = ADMIN)");
+            log.info("Building 2: Delomid IT Bruxelles - 4 apartments, 4 residents (Amir = ADMIN)");
         }
     }
 }
