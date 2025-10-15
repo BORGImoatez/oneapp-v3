@@ -138,13 +138,10 @@ public class ResidentService {
     }
 
     private ResidentDto convertToDto(Resident resident) {
+        // Les informations d'appartement/building sont maintenant gérées via ResidentBuilding
+        // On ne peut plus les récupérer directement depuis Resident
         String apartmentId = null;
         String buildingId = null;
-
-        if (resident.getApartment() != null) {
-            apartmentId = resident.getApartment().getIdApartment();
-            buildingId = resident.getApartment().getBuilding().getBuildingId();
-        }
 
         return ResidentDto.builder()
                 .idUsers(String.valueOf(resident.getIdUsers()))

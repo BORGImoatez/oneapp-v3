@@ -20,8 +20,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(exclude = {"apartment", "residentBuildings"})
-@ToString(exclude = {"apartment", "residentBuildings"})
+@EqualsAndHashCode(exclude = {"residentBuildings"})
+@ToString(exclude = {"residentBuildings"})
 public class Resident implements UserDetails {
 
     @Id
@@ -80,9 +80,6 @@ public class Resident implements UserDetails {
     @Builder.Default
     @Column(name = "is_enabled")
     private Boolean isEnabled = false;
-
-    @OneToOne(mappedBy = "resident", fetch = FetchType.LAZY)
-    private Apartment apartment;
 
     @OneToMany(mappedBy = "resident", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

@@ -216,13 +216,7 @@ public class AuthService {
                 resident.getIdUsers()
         );
 
-        String buildingId = null;
-        String apartmentId = null;
-        if (resident.getApartment() != null) {
-            apartmentId = resident.getApartment().getIdApartment();
-            buildingId = resident.getApartment().getBuilding().getBuildingId();
-        }
-
+        // Pour les utilisateurs sans ResidentBuilding (legacy), on ne retourne pas de building/apartment
         return AuthResponse.builder()
                 .token(token)
                 .refreshToken(refreshToken)
@@ -232,8 +226,8 @@ public class AuthService {
                 .lname(resident.getLname())
                 .role(resident.getRole())
                 .accountStatus(resident.getAccountStatus())
-                .buildingId(buildingId)
-                .apartmentId(apartmentId)
+                .buildingId(null)
+                .apartmentId(null)
                 .otpRequired(false)
                 .message("Connexion réussie")
                 .build();

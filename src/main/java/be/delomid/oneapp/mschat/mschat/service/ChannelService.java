@@ -652,6 +652,7 @@ public class ChannelService {
                 .createdAt(resident.getResident().getCreatedAt())
                 .updatedAt(resident.getResident().getUpdatedAt());
 
+        // L'appartement est maintenant récupéré via ResidentBuilding
         if (resident.getApartment() != null) {
             builder.apartmentId(resident.getApartment().getIdApartment());
         }
