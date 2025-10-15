@@ -236,20 +236,24 @@ public class ChannelService {
         // Vérifier que les deux utilisateurs sont dans le même bâtiment ACTUEL
         validateSameBuildingAccess(userId1, userId2);
 
-        // Utiliser les IDs réels pour la recherche
-        String realUserId1 = user1.getIdUsers();
-        String realUserId2 = user2.getIdUsers();
-
-        Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(realUserId1, realUserId2);
-
-        if (existingChannel.isPresent()) {
-            return Optional.of(convertToDto(existingChannel.get(), userId1));
-        }
-
-        // Récupérer le buildingId actuel depuis le contexte
+        // Récupérer le buildingId actuel depuis le contexte d'abord
         String currentBuildingId = getCurrentBuildingFromContext();
         if (currentBuildingId == null) {
             currentBuildingId = getCurrentUserBuildingId(user1);
+        }
+
+        if (currentBuildingId == null) {
+            throw new IllegalStateException("No building context found for creating one-to-one channel");
+        }
+
+        // Utiliser les IDs réels pour la recherche avec le buildingId
+        String realUserId1 = user1.getIdUsers();
+        String realUserId2 = user2.getIdUsers();
+
+        Optional<Channel> existingChannel = channelRepository.findOneToOneChannel(realUserId1, realUserId2, currentBuildingId);
+
+        if (existingChannel.isPresent()) {
+            return Optional.of(convertToDto(existingChannel.get(), userId1));
         }
 
         // Créer un nouveau canal one-to-one avec le nom de l'autre utilisateur
