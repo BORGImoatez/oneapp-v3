@@ -366,16 +366,15 @@ public class DataInitializationService implements CommandLineRunner {
             log.info("5 residents created/reused for Delomid IT Bruxelles");
 
             // Assigner les résidents aux appartements de Bruxelles
+            // Note: Moatez, Siamak et Farzaneh ont déjà un appartement à Liège
+            // Seuls Amir et Somayyeh ont un appartement à Bruxelles
             aptBxl1.setResident(amir);
-            aptBxl2.setResident(moatezLiege);
-            aptBxl3.setResident(siamak);
             aptBxl4.setResident(somayyeh);
             apartmentRepository.save(aptBxl1);
-            apartmentRepository.save(aptBxl2);
-            apartmentRepository.save(aptBxl3);
             apartmentRepository.save(aptBxl4);
 
             // Créer les relations ResidentBuilding pour Bruxelles (Amir = ADMIN)
+            // Amir a un appartement à Bruxelles (aptBxl1)
             ResidentBuilding rbAmirBxl = ResidentBuilding.builder()
                     .resident(amir)
                     .building(buildingBruxelles)
@@ -383,20 +382,21 @@ public class DataInitializationService implements CommandLineRunner {
                     .roleInBuilding(UserRole.BUILDING_ADMIN)
                     .build();
 
+            // Moatez est résident à Bruxelles mais son appartement principal est à Liège
             ResidentBuilding rbMoatezBxl = ResidentBuilding.builder()
                     .resident(moatezLiege)
                     .building(buildingBruxelles)
-                    .apartment(aptBxl2)
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
+            // Siamak est résident à Bruxelles mais son appartement principal est à Liège
             ResidentBuilding rbSiamakBxl = ResidentBuilding.builder()
                     .resident(siamak)
                     .building(buildingBruxelles)
-                    .apartment(aptBxl3)
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
+            // Somayyeh a un appartement à Bruxelles (aptBxl4)
             ResidentBuilding rbSomayyehBxl = ResidentBuilding.builder()
                     .resident(somayyeh)
                     .building(buildingBruxelles)
@@ -404,6 +404,7 @@ public class DataInitializationService implements CommandLineRunner {
                     .roleInBuilding(UserRole.RESIDENT)
                     .build();
 
+            // Farzaneh est résidente à Bruxelles mais son appartement principal est à Liège
             ResidentBuilding rbFarzanehBxl = ResidentBuilding.builder()
                     .resident(farzanehLiege)
                     .building(buildingBruxelles)
