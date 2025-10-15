@@ -20,30 +20,20 @@ ALTER TABLE apartments DROP CONSTRAINT IF EXISTS ukd7i18j1axm6b148sy9kqfjdsh;
 
 -- Also drop any other unique constraint on resident_id that might exist
 DO $$
+DECLARE
+    constraint_rec RECORD;
 BEGIN
-    -- Drop all unique constraints on resident_id column
-    PERFORM constraint_name
-    FROM information_schema.table_constraints
-    WHERE table_name = 'apartments'
-      AND constraint_type = 'UNIQUE'
-      AND constraint_name IN (
-          SELECT constraint_name
-          FROM information_schema.constraint_column_usage
-          WHERE table_name = 'apartments' AND column_name = 'resident_id'
-      );
-
-    -- If found, drop them
-    FOR constraint_record IN
-        SELECT constraint_name
-        FROM information_schema.table_constraints
-        WHERE table_name = 'apartments'
-          AND constraint_type = 'UNIQUE'
-          AND constraint_name IN (
-              SELECT constraint_name
-              FROM information_schema.constraint_column_usage
-              WHERE table_name = 'apartments' AND column_name = 'resident_id'
-          )
+    -- Find and drop all unique constraints on resident_id column
+    FOR constraint_rec IN
+        SELECT tc.constraint_name
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.constraint_column_usage ccu
+            ON tc.constraint_name = ccu.constraint_name
+            AND tc.table_schema = ccu.table_schema
+        WHERE tc.table_name = 'apartments'
+          AND tc.constraint_type = 'UNIQUE'
+          AND ccu.column_name = 'resident_id'
     LOOP
-        EXECUTE 'ALTER TABLE apartments DROP CONSTRAINT IF EXISTS ' || constraint_record.constraint_name;
+        EXECUTE 'ALTER TABLE apartments DROP CONSTRAINT IF EXISTS ' || constraint_rec.constraint_name;
     END LOOP;
 END $$;
