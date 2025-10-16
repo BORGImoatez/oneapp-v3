@@ -63,7 +63,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _uploadImage(File imageFile) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
+    final token = await authProvider.getToken();
 
     if (token == null) return;
 
@@ -104,7 +104,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _deleteProfilePicture() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
+    final token = await authProvider.getToken();
 
     if (token == null) return;
 
@@ -147,7 +147,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
+    final token = await authProvider.getToken();
 
     if (token == null) return;
 
@@ -249,7 +249,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               }
 
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
-              final token = authProvider.token;
+              final token = await authProvider.getToken();
 
               if (token == null) return;
 

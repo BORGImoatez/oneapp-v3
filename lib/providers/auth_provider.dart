@@ -238,7 +238,9 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  String? get token => StorageService.getToken();
+  Future<String?> getToken() async {
+    return await StorageService.getToken();
+  }
 
   void _setLoading(bool loading) {
     _isLoading = loading;
