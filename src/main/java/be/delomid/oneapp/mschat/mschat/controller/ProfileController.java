@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Profile Management", description = "APIs pour la gestion du profil utilisateur")

@@ -346,7 +346,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(50),
                                     child: Image.network(
-                                      '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${_profilePictureUrl!}',
+                                      '${ApiConstants.baseUrl}${_profilePictureUrl!}',
                                       width: 100,
                                       height: 100,
                                       fit: BoxFit.cover,

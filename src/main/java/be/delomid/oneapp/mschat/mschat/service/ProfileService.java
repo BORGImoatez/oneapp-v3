@@ -95,7 +95,7 @@ public class ProfileService {
 
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        String pictureUrl = "/api/files/profiles/" + filename;
+        String pictureUrl = "/files/profiles/" + filename;
         resident.setPicture(pictureUrl);
         resident = residentRepository.save(resident);
 
