@@ -5,6 +5,7 @@ import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.dto.UpdateProfileRequest;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.util.PictureUrlUtil;
 import be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -157,13 +158,20 @@ public class ProfileService {
     }
 
     private ResidentDto convertToDto(Resident resident) {
+        String picture = PictureUrlUtil.normalizePictureUrl(resident.getPicture());
+        if (picture != null && !picture.equals(resident.getPicture())) {
+            resident.setPicture(picture);
+            residentRepository.save(resident);
+            log.debug("Fixed picture URL for user {}: {}", resident.getIdUsers(), picture);
+        }
+
         return ResidentDto.builder()
                 .idUsers(resident.getIdUsers())
                 .fname(resident.getFname())
                 .lname(resident.getLname())
                 .email(resident.getEmail())
                 .phoneNumber(resident.getPhoneNumber())
-                .picture(resident.getPicture())
+                .picture(picture)
                 .role(resident.getRole())
                 .accountStatus(resident.getAccountStatus())
                 .managedBuildingId(resident.getManagedBuildingId())
