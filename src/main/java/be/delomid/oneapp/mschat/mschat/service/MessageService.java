@@ -298,10 +298,15 @@ public class MessageService {
                     .build();
         }
 
+        Resident sender = residentRepository.findById(message.getSenderId()).orElse(null);
+
         return MessageDto.builder()
                 .id(message.getId())
                 .channelId(message.getChannel().getId())
                 .senderId(message.getSenderId())
+                .senderFname(sender != null ? sender.getFname() : "")
+                .senderLname(sender != null ? sender.getLname() : "")
+                .senderPicture(sender != null ? sender.getPicture() : null)
                 .content(message.getContent())
                 .type(message.getType())
                 .replyToId(message.getReplyToId())

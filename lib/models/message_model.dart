@@ -70,6 +70,9 @@ class Message {
   final int id;
   final int channelId;
   final String senderId;
+  final String senderFname;
+  final String senderLname;
+  final String? senderPicture;
   final String content;
   final String type;
   final int? replyToId;
@@ -83,6 +86,9 @@ class Message {
     required this.id,
     required this.channelId,
     required this.senderId,
+    required this.senderFname,
+    required this.senderLname,
+    this.senderPicture,
     required this.content,
     required this.type,
     this.replyToId,
@@ -98,6 +104,9 @@ class Message {
       id: json['id'],
       channelId: json['channelId'],
       senderId: json['senderId'],
+      senderFname: json['senderFname'] ?? '',
+      senderLname: json['senderLname'] ?? '',
+      senderPicture: json['senderPicture'],
       content: json['content'],
       type: json['type'],
       replyToId: json['replyToId'],
@@ -116,6 +125,9 @@ class Message {
       'id': id,
       'channelId': channelId,
       'senderId': senderId,
+      'senderFname': senderFname,
+      'senderLname': senderLname,
+      'senderPicture': senderPicture,
       'content': content,
       'type': type,
       'replyToId': replyToId,

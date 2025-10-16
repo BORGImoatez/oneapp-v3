@@ -143,6 +143,32 @@ public class FileService {
         }
     }
 
+    public ResponseEntity<byte[]> getProfilePicture(String filename) {
+        try {
+            Path filePath = Paths.get("uploads/profiles").resolve(filename);
+
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] fileContent = Files.readAllBytes(filePath);
+            String contentType = Files.probeContentType(filePath);
+
+            if (contentType == null) {
+                contentType = "image/jpeg";
+            }
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(fileContent);
+
+        } catch (IOException e) {
+            log.error("Error retrieving profile picture: {}", filename, e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     private void validateFile(MultipartFile file, String type) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");

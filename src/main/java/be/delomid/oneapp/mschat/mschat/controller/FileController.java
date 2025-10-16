@@ -39,6 +39,11 @@ public class FileController {
         return fileService.downloadFile(fileId);
     }
 
+    @GetMapping("/profiles/{filename}")
+    public ResponseEntity<byte[]> getProfilePicture(@PathVariable String filename) {
+        return fileService.getProfilePicture(filename);
+    }
+
     @DeleteMapping("/{fileId}")
     public ResponseEntity<Void> deleteFile(
             @PathVariable String fileId,

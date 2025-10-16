@@ -12,6 +12,9 @@ public class MessageDto {
     private Long id;
     private Long channelId;
     private String senderId;
+    private String senderFname;
+    private String senderLname;
+    private String senderPicture;
     private String content;
     private MessageType type;
     private Long replyToId;

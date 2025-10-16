@@ -8,6 +8,7 @@ import '../models/message_model.dart';
 import '../utils/app_theme.dart';
 import '../utils/constants.dart';
 import 'package:dio/dio.dart';
+import 'user_avatar.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -31,17 +32,11 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
-            CircleAvatar(
+            UserAvatar(
+              profilePictureUrl: message.senderPicture,
+              firstName: message.senderFname,
+              lastName: message.senderLname,
               radius: 16,
-              backgroundColor: AppTheme.primaryColor,
-              child: Text(
-                message.senderId.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
             const SizedBox(width: 8),
           ],

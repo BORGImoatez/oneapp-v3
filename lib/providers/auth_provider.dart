@@ -232,6 +232,13 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void updateUser(User updatedUser) {
+    _user = updatedUser;
+    StorageService.saveUser(updatedUser);
+    notifyListeners();
+  }
+
+  String? get token => StorageService.getToken();
 
   void _setLoading(bool loading) {
     _isLoading = loading;

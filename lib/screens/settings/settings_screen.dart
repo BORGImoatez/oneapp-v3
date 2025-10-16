@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 import 'building_switch_screen.dart';
+import 'profile_edit_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -33,7 +34,11 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Profil',
                   subtitle: 'Modifier vos informations personnelles',
                   onTap: () {
-                    // Navigate to profile screen
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileEditScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildSettingsItem(
