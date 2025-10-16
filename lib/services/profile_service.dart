@@ -78,10 +78,15 @@ class ProfileService {
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
+    print('DEBUG ProfileService: Upload status: ${response.statusCode}');
     if (response.statusCode == 200) {
       final data = json.decode(utf8.decode(response.bodyBytes));
-      return User.fromJson(data);
+      print('DEBUG ProfileService: Upload response: $data');
+      final user = User.fromJson(data);
+      print('DEBUG ProfileService: Parsed user picture: ${user.picture}');
+      return user;
     } else {
+      print('DEBUG ProfileService: Upload failed: ${response.body}');
       throw Exception('Failed to upload profile picture: ${response.statusCode}');
     }
   }

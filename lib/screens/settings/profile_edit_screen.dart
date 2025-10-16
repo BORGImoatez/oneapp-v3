@@ -75,8 +75,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         imageFile: imageFile,
       );
 
+      print('DEBUG: Updated user picture: ${updatedUser.picture}');
       setState(() => _profilePictureUrl = updatedUser.picture);
       authProvider.updateUser(updatedUser);
+      print('DEBUG: Local state updated, picture URL: $_profilePictureUrl');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -342,22 +344,38 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                             ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
-                            : _profilePictureUrl != null
+                            : _profilePictureUrl != null && _profilePictureUrl!.isNotEmpty
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(50),
-                                    child: Image.network(
-                                      '${ApiConstants.baseUrl}${_profilePictureUrl!}',
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Text(
-                                          user?.initials ?? 'U',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 32,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                    child: Builder(
+                                      builder: (context) {
+                                        final imageUrl = '${ApiConstants.baseUrl}$_profilePictureUrl';
+                                        print('DEBUG ProfileEdit: Loading image from: $imageUrl');
+                                        return Image.network(
+                                          imageUrl,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              print('DEBUG ProfileEdit: Image loaded');
+                                              return child;
+                                            }
+                                            return const Center(
+                                              child: CircularProgressIndicator(color: Colors.white),
+                                            );
+                                          },
+                                          errorBuilder: (context, error, stackTrace) {
+                                            print('DEBUG ProfileEdit: Error loading image: $error');
+                                            return Text(
+                                              user?.initials ?? 'U',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            );
+                                          },
                                         );
                                       },
                                     ),

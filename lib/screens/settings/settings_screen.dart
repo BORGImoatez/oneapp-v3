@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/constants.dart';
 import 'building_switch_screen.dart';
 import 'profile_edit_screen.dart';
 
@@ -203,15 +204,22 @@ class SettingsScreen extends StatelessWidget {
               CircleAvatar(
                 radius: 40,
                 backgroundColor: AppTheme.primaryColor,
-                child: user?.picture != null
+                child: user?.picture != null && user!.picture!.isNotEmpty
                     ? ClipRRect(
                   borderRadius: BorderRadius.circular(40),
                   child: Image.network(
-                    user!.picture!,
+                    '${ApiConstants.baseUrl}${user.picture!}',
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    },
                     errorBuilder: (context, error, stackTrace) {
+                      print('DEBUG Settings: Error loading profile picture: $error');
                       return Text(
                         user.initials,
                         style: const TextStyle(
