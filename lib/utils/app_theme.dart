@@ -22,6 +22,35 @@ class AppTheme {
   static const Color onlineColor = Color(0xFF38A169);
   static const Color offlineColor = Color(0xFFE53E3E);
 
+  // Text Styles
+  static const TextStyle titleStyle = TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    color: textPrimary,
+  );
+
+  static const TextStyle subtitleStyle = TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: textPrimary,
+  );
+
+  static const TextStyle bodyStyle = TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: textPrimary,
+  );
+
+  static const TextStyle captionStyle = TextStyle(
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: textSecondary,
+  );
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
