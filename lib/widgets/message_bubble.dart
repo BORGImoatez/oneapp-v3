@@ -138,7 +138,7 @@ class MessageBubble extends StatelessWidget {
     switch (message.type.toString()) {
       case 'MessageType.IMAGE':
       case 'IMAGE':
-        return _buildImageMessage();
+        return _buildImageMessage(context);
       case 'MessageType.FILE':
       case 'FILE':
         return _buildFileMessage(context);
@@ -156,12 +156,12 @@ class MessageBubble extends StatelessWidget {
     }
   }
 
-  Widget _buildImageMessage() {
+  Widget _buildImageMessage(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: () => _downloadImage(message.content),
+          onTap: () => _downloadImage(message.content,context),
           borderRadius: BorderRadius.circular(12),
           child: Stack(
             children: [
@@ -273,37 +273,54 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Future<void> _downloadImage(String imageUrl) async {
-    try {
-      // Note: Pas besoin de permission pour écrire dans l'espace privé de l'app
+  Future<void> _downloadImage(String imageUrl, BuildContext context) async {
+    if (imageUrl.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('URL de téléchargement non disponible'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
-      // Utiliser le répertoire approprié selon la plateforme
+    try {
+      if (context.mounted) {
+        // Dialog de téléchargement
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Téléchargement en cours...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Répertoire de sauvegarde
       Directory? directory;
       if (Platform.isAndroid) {
-        // Sur Android, utiliser getExternalStorageDirectory()
         directory = await getExternalStorageDirectory();
         if (directory != null) {
-          // Créer un sous-dossier Images dans notre espace app
           final imagesDir = Directory('${directory.path}/Images');
-          if (!await imagesDir.exists()) {
-            await imagesDir.create(recursive: true);
-          }
+          if (!await imagesDir.exists()) await imagesDir.create(recursive: true);
           directory = imagesDir;
         }
       } else {
         directory = await getApplicationDocumentsDirectory();
       }
 
-      if (directory == null) {
-        print('DEBUG: Impossible d\'obtenir le répertoire');
-        return;
-      }
+      if (directory == null) throw Exception('Impossible d\'obtenir le répertoire');
 
-      final fileName = 'MGI_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName = 'IMG_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final filePath = '${directory.path}/$fileName';
-
-      print('DEBUG: Téléchargement de l\'image depuis: $imageUrl');
-      print('DEBUG: Vers: $filePath');
 
       final dio = Dio();
       await dio.download(
@@ -317,9 +334,35 @@ class MessageBubble extends StatelessWidget {
         },
       );
 
-      print('DEBUG: Image téléchargée avec succès: $filePath');
+      if (context.mounted) Navigator.of(context).pop(); // fermer le dialogue
+
+      // Ouvrir l'image automatiquement
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done) {
+        throw Exception('Impossible d\'ouvrir l\'image');
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✓ Image téléchargée: $fileName'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
-      print('DEBUG: Erreur lors du téléchargement de l\'image: $e');
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Désolé, nous ne pouvons pas procéder au téléchargement: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      print('Erreur téléchargement image: $e');
     }
   }
 

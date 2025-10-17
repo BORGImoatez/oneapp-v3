@@ -342,52 +342,52 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         backgroundColor: AppTheme.primaryColor,
                         child: _isUploadingImage
                             ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
+                          color: Colors.white,
+                        )
                             : _profilePictureUrl != null && _profilePictureUrl!.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(50),
-                                    child: Builder(
-                                      builder: (context) {
-                                        final imageUrl = '${ApiConstants.baseUrl}$_profilePictureUrl';
-                                        print('DEBUG ProfileEdit: Loading image from: $imageUrl');
-                                        return Image.network(
-                                          imageUrl,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                          loadingBuilder: (context, child, loadingProgress) {
-                                            if (loadingProgress == null) {
-                                              print('DEBUG ProfileEdit: Image loaded');
-                                              return child;
-                                            }
-                                            return const Center(
-                                              child: CircularProgressIndicator(color: Colors.white),
-                                            );
-                                          },
-                                          errorBuilder: (context, error, stackTrace) {
-                                            print('DEBUG ProfileEdit: Error loading image: $error');
-                                            return Text(
-                                              user?.initials ?? 'U',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 32,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : Text(
+                            ? ClipRRect(
+                          borderRadius: BorderRadius.circular(50),
+                          child: Builder(
+                            builder: (context) {
+                              final imageUrl = '${Constants.baseUrl}$_profilePictureUrl';
+                              print('DEBUG ProfileEdit: Loading image from: $imageUrl');
+                              return Image.network(
+                                imageUrl,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) {
+                                    print('DEBUG ProfileEdit: Image loaded');
+                                    return child;
+                                  }
+                                  return const Center(
+                                    child: CircularProgressIndicator(color: Colors.white),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  print('DEBUG ProfileEdit: Error loading image: $error');
+                                  return Text(
                                     user?.initials ?? 'U',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 32,
                                       fontWeight: FontWeight.bold,
                                     ),
-                                  ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        )
+                            : Text(
+                          user?.initials ?? 'U',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                       Positioned(
                         bottom: 0,

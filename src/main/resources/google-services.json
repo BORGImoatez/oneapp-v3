@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "144611514747",
+    "project_id": "mgi-delomid",
+    "storage_bucket": "mgi-delomid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:144611514747:android:1314af6d53eb646f72c5de",
+        "android_client_info": {
+          "package_name": "com.example.oneappmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc0bbgOtl4aO2at2AOAsXzrIJ6-w5PA2k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

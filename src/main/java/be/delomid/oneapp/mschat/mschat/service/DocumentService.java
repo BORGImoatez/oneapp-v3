@@ -785,7 +785,7 @@ public class DocumentService {
     }
 
     private DocumentDto mapToDocumentDto(Document document) {
-        String baseUrl = "http://192.168.129.223:9090/api/v1/documents";
+        String baseUrl = "http://109.136.4.153:9090/api/v1/documents";
         return DocumentDto.builder()
                 .id(document.getId())
                 .originalFilename(document.getOriginalFilename())

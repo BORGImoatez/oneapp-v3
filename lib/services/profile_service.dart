@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 import '../utils/constants.dart';
 
 class ProfileService {
-  final String baseUrl = '${ApiConstants.baseUrl}/profile';
+  final String baseUrl = '${Constants.baseUrl}/profile';
 
   Future<User> getCurrentProfile(String token) async {
     final response = await http.get(

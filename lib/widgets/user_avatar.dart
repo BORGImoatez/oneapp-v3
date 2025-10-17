@@ -27,7 +27,7 @@ class UserAvatar extends StatelessWidget {
     print('DEBUG UserAvatar: profilePictureUrl=$profilePictureUrl, firstName=$firstName, lastName=$lastName');
 
     if (profilePictureUrl != null && profilePictureUrl!.isNotEmpty) {
-      final imageUrl = '${ApiConstants.baseUrl}$profilePictureUrl';
+      final imageUrl = '${Constants.baseUrl}$profilePictureUrl';
       print('DEBUG UserAvatar: Loading image from: $imageUrl');
 
       return CircleAvatar(

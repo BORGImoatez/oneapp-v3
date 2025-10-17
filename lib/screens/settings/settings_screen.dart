@@ -208,7 +208,7 @@ class SettingsScreen extends StatelessWidget {
                     ? ClipRRect(
                   borderRadius: BorderRadius.circular(40),
                   child: Image.network(
-                    '${ApiConstants.baseUrl}${user.picture!}',
+                    '${Constants.baseUrl}${user.picture!}',
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -371,80 +371,107 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
+    showDialog(
       context: context,
-      applicationName: 'MGI',
-      applicationVersion: '1.0.0',
-      applicationLegalese: 'Powered by DELOMID IT',
-      applicationIcon: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: AppTheme.primaryColor,
-          borderRadius: BorderRadius.circular(15),
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(
-          Icons.apartment,
-          color: Colors.white,
-          size: 30,
-        ),
-      ),
-      children: [
-        const Text('Messagerie Gestion Immobilière'),
-        const SizedBox(height: 16),
-        const Text(
-          'Application de messagerie pour la gestion des communications dans les immeubles résidentiels.',
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppTheme.primaryColor.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                Icons.code,
+        title: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
                 color: AppTheme.primaryColor,
-                size: 32,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Powered by',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w400,
-                ),
+              child: const Icon(
+                Icons.apartment,
+                color: Colors.white,
+                size: 28,
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'DELOMID IT',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'MGI',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               const SizedBox(height: 8),
-              Text(
-                'Solutions informatiques innovantes',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
+              const Text(
+                'Version 1.0.0',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Messagerie Gestion Immobilière\n\n'
+                    'Application de messagerie pour la gestion des communications dans les immeubles résidentiels.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.code,
+                      color: AppTheme.primaryColor,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Powered by',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'DELOMID IT',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Solutions informatiques innovantes',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
     );
   }
 }
