@@ -15,8 +15,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@EqualsAndHashCode(exclude = {"address", "apartments"})
-@ToString(exclude = {"address", "apartments"})
+@EqualsAndHashCode(exclude = {"address", "apartments", "photos"})
+@ToString(exclude = {"address", "apartments", "photos"})
 public class Building {
 
     @Id
@@ -42,6 +42,10 @@ public class Building {
     @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Apartment> apartments = new HashSet<>();
+
+    @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<BuildingPhoto> photos = new HashSet<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
