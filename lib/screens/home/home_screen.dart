@@ -321,7 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, channelProvider, authProvider, child) {
             final recentChannels = channelProvider.channels.take(2).toList();
             final screenWidth = MediaQuery.of(context).size.width;
-            final isAdmin = authProvider.user?.role == 'ADMIN';
+            final isAdmin = authProvider.user?.isAdmin ?? false;
 
             final quickAccessItems = <Widget>[
               QuickAccessCard(

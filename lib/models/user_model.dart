@@ -9,6 +9,7 @@ class User {
   final String accountStatus;
   final String? buildingId;
   final String? apartmentId;
+  final String? roleInBuilding;
 
   User({
     required this.id,
@@ -21,6 +22,7 @@ class User {
     required this.accountStatus,
     this.buildingId,
     this.apartmentId,
+    this.roleInBuilding,
   });
 
   String get fullName => '$fname $lname';
@@ -40,6 +42,7 @@ class User {
       accountStatus: json['accountStatus'] ?? 'ACTIVE',
       buildingId: json['buildingId'],
       apartmentId: json['apartmentId'],
+      roleInBuilding: json['roleInBuilding'],
     );
   }
 
@@ -55,6 +58,12 @@ class User {
       'accountStatus': accountStatus,
       'buildingId': buildingId,
       'apartmentId': apartmentId,
+      'roleInBuilding': roleInBuilding,
     };
   }
+
+  bool get isBuildingAdmin => roleInBuilding == 'BUILDING_ADMIN';
+  bool get isGroupAdmin => roleInBuilding == 'GROUP_ADMIN';
+  bool get isSuperAdmin => roleInBuilding == 'SUPER_ADMIN';
+  bool get isAdmin => isBuildingAdmin || isGroupAdmin || isSuperAdmin;
 }
