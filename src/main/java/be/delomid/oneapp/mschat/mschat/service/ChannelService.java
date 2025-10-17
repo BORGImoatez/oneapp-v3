@@ -3,6 +3,7 @@ package be.delomid.oneapp.mschat.mschat.service;
 import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
+import be.delomid.oneapp.mschat.mschat.dto.PublicChannelDetailsDto;
 import be.delomid.oneapp.mschat.mschat.dto.PublicChannelWithMessagesDto;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
@@ -666,6 +667,39 @@ public class ChannelService {
 
         return builder.build();
 
+    }
+
+    public PublicChannelDetailsDto getPublicChannelDetails(Long channelId) {
+        Channel channel = channelRepository.findById(channelId)
+                .orElseThrow(() -> new ChannelNotFoundException("Channel not found: " + channelId));
+
+        List<Message> messages = messageRepository.findByChannelIdOrderByCreatedAtDesc(channel.getId());
+
+        List<PublicChannelDetailsDto.PublicMessageDto> messageDtos = messages.stream()
+                .map(message -> {
+                    Resident sender = residentRepository.findById(message.getSenderId()).orElse(null);
+                    String senderName = sender != null
+                            ? sender.getFname() + " " + sender.getLname()
+                            : "Unknown";
+
+                    return PublicChannelDetailsDto.PublicMessageDto.builder()
+                            .messageId(message.getId())
+                            .senderName(senderName)
+                            .content(message.getContent())
+                            .type(message.getType())
+                            .sentAt(message.getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return PublicChannelDetailsDto.builder()
+                .channelId(channel.getId())
+                .channelName(channel.getName())
+                .channelDescription(channel.getDescription())
+                .channelType(channel.getType())
+                .channelCreatedAt(channel.getCreatedAt())
+                .messages(messageDtos)
+                .build();
     }
 
     public List<PublicChannelWithMessagesDto> getPublicBuildingChannelsWithMessages(String buildingId) {
