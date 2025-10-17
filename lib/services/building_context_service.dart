@@ -15,24 +15,44 @@ class BuildingContextService {
 
   String? _currentBuildingId;
   String? _previousBuildingId;
+  String? _currentBuildingName;
 
   String? get currentBuildingId => _currentBuildingId;
   String? get previousBuildingId => _previousBuildingId;
+  String? get currentBuildingName => _currentBuildingName;
 
-  void setBuildingContext(String buildingId) {
+  Future<String?> getCurrentBuildingId() async {
+    if (_currentBuildingId == null) {
+      await loadBuildingContext();
+    }
+    return _currentBuildingId;
+  }
+
+  Future<String?> getCurrentBuildingName() async {
+    if (_currentBuildingName == null) {
+      await loadBuildingContext();
+    }
+    return _currentBuildingName;
+  }
+
+  void setBuildingContext(String buildingId, {String? buildingName}) {
     if (_currentBuildingId != buildingId) {
       print('DEBUG: Building context changed from $_currentBuildingId to $buildingId');
       _previousBuildingId = _currentBuildingId;
       _currentBuildingId = buildingId;
+      _currentBuildingName = buildingName;
 
       // Sauvegarder le contexte actuel
-      _saveBuildingContext(buildingId);
+      _saveBuildingContext(buildingId, buildingName);
     }
   }
 
-  void _saveBuildingContext(String buildingId) async {
+  void _saveBuildingContext(String buildingId, String? buildingName) async {
     await StorageService.setString('current_building_id', buildingId);
-    print('DEBUG: Building context saved: $buildingId');
+    if (buildingName != null) {
+      await StorageService.setString('current_building_name', buildingName);
+    }
+    print('DEBUG: Building context saved: $buildingId - $buildingName');
   }
 
   Future<void> loadBuildingContext() async {
@@ -41,13 +61,21 @@ class BuildingContextService {
       _currentBuildingId = savedBuildingId;
       print('DEBUG: Building context loaded from storage: $savedBuildingId');
     }
+
+    final savedBuildingName = StorageService.getString('current_building_name');
+    if (savedBuildingName.isNotEmpty) {
+      _currentBuildingName = savedBuildingName;
+      print('DEBUG: Building name loaded from storage: $savedBuildingName');
+    }
   }
 
   void clearBuildingContext() {
     print('DEBUG: Clearing building context');
     _previousBuildingId = _currentBuildingId;
     _currentBuildingId = null;
+    _currentBuildingName = null;
     StorageService.setString('current_building_id', '');
+    StorageService.setString('current_building_name', '');
   }
 
   static void clearAllProvidersData(BuildContext context) {
