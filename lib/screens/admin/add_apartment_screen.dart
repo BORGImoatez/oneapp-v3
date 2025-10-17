@@ -8,9 +8,9 @@ class AddApartmentScreen extends StatefulWidget {
   final String buildingId;
 
   const AddApartmentScreen({
-    Key? key,
+    super.key,
     required this.buildingId,
-  }) : super(key: key);
+  });
 
   @override
   State<AddApartmentScreen> createState() => _AddApartmentScreenState();

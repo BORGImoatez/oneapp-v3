@@ -10,10 +10,10 @@ class BuildingPhotosScreen extends StatefulWidget {
   final String buildingName;
 
   const BuildingPhotosScreen({
-    Key? key,
+    super.key,
     required this.buildingId,
     required this.buildingName,
-  }) : super(key: key);
+  });
 
   @override
   State<BuildingPhotosScreen> createState() => _BuildingPhotosScreenState();

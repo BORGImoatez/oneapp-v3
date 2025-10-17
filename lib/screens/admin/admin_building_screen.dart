@@ -8,7 +8,7 @@ import 'building_3d_view_screen.dart';
 import 'building_photos_screen.dart';
 
 class AdminBuildingScreen extends StatefulWidget {
-  const AdminBuildingScreen({Key? key}) : super(key: key);
+  const AdminBuildingScreen({super.key});
 
   @override
   State<AdminBuildingScreen> createState() => _AdminBuildingScreenState();

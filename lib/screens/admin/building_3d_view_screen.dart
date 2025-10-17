@@ -7,11 +7,11 @@ class Building3DViewScreen extends StatefulWidget {
   final List<Map<String, dynamic>> apartments;
 
   const Building3DViewScreen({
-    Key? key,
+    super.key,
     required this.buildingId,
     required this.buildingName,
     required this.apartments,
-  }) : super(key: key);
+  });
 
   @override
   State<Building3DViewScreen> createState() => _Building3DViewScreenState();

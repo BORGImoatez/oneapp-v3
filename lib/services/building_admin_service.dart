@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/building_photo_model.dart';
-import '../models/folder_model.dart';
 import '../utils/constants.dart';
 import 'api_service.dart';
 
