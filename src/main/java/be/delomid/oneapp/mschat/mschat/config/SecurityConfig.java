@@ -60,6 +60,7 @@ public class SecurityConfig {
                         .requestMatchers("/files/**").permitAll()
                         // Public channels
                         .requestMatchers("/channels/public/**").permitAll()
+                        .requestMatchers("/api/v1/channels/public/**").permitAll()
                         // Admin endpoints
                         .requestMatchers("/admin/**").hasAnyRole("BUILDING_ADMIN", "GROUP_ADMIN", "SUPER_ADMIN")
                         // Building, apartment, resident endpoints

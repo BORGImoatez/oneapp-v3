@@ -3,6 +3,7 @@ package be.delomid.oneapp.mschat.mschat.service;
 import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
 import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
+import be.delomid.oneapp.mschat.mschat.dto.PublicChannelWithMessagesDto;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
@@ -665,6 +666,48 @@ public class ChannelService {
 
         return builder.build();
 
+    }
+
+    public List<PublicChannelWithMessagesDto> getPublicBuildingChannelsWithMessages(String buildingId) {
+        List<Channel> channels = channelRepository.findByTypeAndBuildingId(ChannelType.BUILDING, buildingId);
+
+        return channels.stream()
+                .map(channel -> {
+                    List<Message> messages = messageRepository.findByChannelIdOrderByCreatedAtDesc(channel.getId());
+
+                    List<MessageDto> messageDtos = messages.stream()
+                            .map(message -> {
+                                Resident sender = residentRepository.findById(message.getSenderId()).orElse(null);
+                                return MessageDto.builder()
+                                        .id(message.getId())
+                                        .channelId(message.getChannel().getId())
+                                        .senderId(message.getSenderId())
+                                        .senderFname(sender != null ? sender.getFname() : "")
+                                        .senderLname(sender != null ? sender.getLname() : "")
+                                        .senderPicture(sender != null ? sender.getPicture() : null)
+                                        .content(message.getContent())
+                                        .type(message.getType())
+                                        .replyToId(message.getReplyToId())
+                                        .isEdited(message.getIsEdited())
+                                        .isDeleted(message.getIsDeleted())
+                                        .createdAt(message.getCreatedAt())
+                                        .updatedAt(message.getUpdatedAt())
+                                        .build();
+                            })
+                            .collect(Collectors.toList());
+
+                    return PublicChannelWithMessagesDto.builder()
+                            .id(channel.getId())
+                            .name(channel.getName())
+                            .description(channel.getDescription())
+                            .type(channel.getType())
+                            .buildingId(channel.getBuildingId())
+                            .isPrivate(channel.getIsPrivate())
+                            .createdAt(channel.getCreatedAt())
+                            .messages(messageDtos)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     private void sendChannelCreationNotifications(Channel channel, String creatorId, String buildingId) {

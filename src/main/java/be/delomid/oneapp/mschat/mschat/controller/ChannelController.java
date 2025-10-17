@@ -3,6 +3,7 @@ package be.delomid.oneapp.mschat.mschat.controller;
 
 import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
+import be.delomid.oneapp.mschat.mschat.dto.PublicChannelWithMessagesDto;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.service.ChannelService;
@@ -148,6 +149,14 @@ public class ChannelController {
         String userId = getUserId(authentication);
         ChannelDto channel = channelService.createBuildingChannel(buildingId, userId);
         return ResponseEntity.ok(channel);
+    }
+
+    @GetMapping("/public/building/{buildingId}/with-messages")
+    public ResponseEntity<List<PublicChannelWithMessagesDto>> getPublicBuildingChannelsWithMessages(
+            @PathVariable String buildingId) {
+
+        List<PublicChannelWithMessagesDto> channels = channelService.getPublicBuildingChannelsWithMessages(buildingId);
+        return ResponseEntity.ok(channels);
     }
 
     private String getUserId(Authentication authentication) {
