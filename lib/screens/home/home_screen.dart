@@ -12,6 +12,7 @@ import '../../widgets/quick_access_card.dart';
 import '../../widgets/building_selector_dropdown.dart';
 import '../chat/chat_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../admin/admin_building_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -316,11 +317,88 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Consumer<ChannelProvider>(
-          builder: (context, channelProvider, child) {
+        Consumer2<ChannelProvider, AuthProvider>(
+          builder: (context, channelProvider, authProvider, child) {
             final recentChannels = channelProvider.channels.take(2).toList();
             final screenWidth = MediaQuery.of(context).size.width;
-            final cardHeight = (screenWidth - 48) / 2 * 0.8;
+            final isAdmin = authProvider.user?.role == 'ADMIN';
+
+            final quickAccessItems = <Widget>[
+              QuickAccessCard(
+                title: 'Dernier Chat',
+                subtitle: recentChannels.isNotEmpty
+                    ? recentChannels.first.name
+                    : 'Aucun chat récent',
+                icon: Icons.chat,
+                color: AppTheme.primaryColor,
+                onTap: () {
+                  if (recentChannels.isNotEmpty) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          channel: recentChannels.first,
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              QuickAccessCard(
+                title: 'Dernier Canal',
+                subtitle: recentChannels.length > 1
+                    ? recentChannels[1].name
+                    : 'Aucun canal récent',
+                icon: Icons.forum,
+                color: AppTheme.accentColor,
+                onTap: () {
+                  if (recentChannels.length > 1) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          channel: recentChannels[1],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              Consumer<NotificationProvider>(
+                builder: (context, notificationProvider, child) {
+                  return QuickAccessCard(
+                    title: 'Notifications',
+                    subtitle: notificationProvider.unreadNotifications > 0
+                        ? '${notificationProvider.unreadNotifications} non lue${notificationProvider.unreadNotifications > 1 ? 's' : ''}'
+                        : 'Aucune notification',
+                    icon: Icons.notifications,
+                    color: AppTheme.warningColor,
+                    badge: notificationProvider.unreadNotifications > 0
+                        ? notificationProvider.unreadNotifications
+                        : null,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              if (isAdmin)
+                QuickAccessCard(
+                  title: 'Gestion Immeuble',
+                  subtitle: 'Ajouter des biens',
+                  icon: Icons.admin_panel_settings,
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const AdminBuildingScreen(),
+                      ),
+                    );
+                  },
+                ),
+            ];
 
             return GridView.count(
               shrinkWrap: true,
@@ -329,68 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: screenWidth < 360 ? 1.0 : 1.2,
-              children: [
-                QuickAccessCard(
-                  title: 'Dernier Chat',
-                  subtitle: recentChannels.isNotEmpty
-                      ? recentChannels.first.name
-                      : 'Aucun chat récent',
-                  icon: Icons.chat,
-                  color: AppTheme.primaryColor,
-                  onTap: () {
-                    if (recentChannels.isNotEmpty) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            channel: recentChannels.first,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                QuickAccessCard(
-                  title: 'Dernier Canal',
-                  subtitle: recentChannels.length > 1
-                      ? recentChannels[1].name
-                      : 'Aucun canal récent',
-                  icon: Icons.forum,
-                  color: AppTheme.accentColor,
-                  onTap: () {
-                    if (recentChannels.length > 1) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ChatScreen(
-                            channel: recentChannels[1],
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                Consumer<NotificationProvider>(
-                  builder: (context, notificationProvider, child) {
-                    return QuickAccessCard(
-                      title: 'Notifications',
-                      subtitle: notificationProvider.unreadNotifications > 0
-                          ? '${notificationProvider.unreadNotifications} non lue${notificationProvider.unreadNotifications > 1 ? 's' : ''}'
-                          : 'Aucune notification',
-                      icon: Icons.notifications,
-                      color: AppTheme.warningColor,
-                      badge: notificationProvider.unreadNotifications > 0
-                          ? notificationProvider.unreadNotifications
-                          : null,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationsScreen(),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
+              children: quickAccessItems,
             );
           },
         ),
