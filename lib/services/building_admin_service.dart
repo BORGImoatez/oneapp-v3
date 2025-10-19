@@ -1,17 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:mgi/services/storage_service.dart';
 import '../models/building_photo_model.dart';
+import '../models/folder_model.dart';
 import '../utils/constants.dart';
 import 'api_service.dart';
 
 class BuildingAdminService {
   final ApiService _apiService = ApiService();
-
+  Future<String?> _getToken() async {
+    return await StorageService.getToken();
+  }
   Future<List<BuildingPhotoModel>> getBuildingPhotos(String buildingId) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.get(
-        Uri.parse('${Constants.apiUrl}/buildings/$buildingId/photos'),
+        Uri.parse('${Constants.baseUrl}/buildings/$buildingId/photos'),
+ 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -36,9 +41,9 @@ class BuildingAdminService {
     int order = 0,
   }) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.post(
-        Uri.parse('${Constants.apiUrl}/buildings/$buildingId/photos'),
+        Uri.parse('${Constants.baseUrl}/buildings/$buildingId/photos'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -62,9 +67,9 @@ class BuildingAdminService {
 
   Future<void> deleteBuildingPhoto(int photoId) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.delete(
-        Uri.parse('${Constants.apiUrl}/buildings/photos/$photoId'),
+        Uri.parse('${Constants.baseUrl}/buildings/photos/$photoId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -81,9 +86,9 @@ class BuildingAdminService {
 
   Future<BuildingPhotoModel> updatePhotoOrder(int photoId, int newOrder) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.put(
-        Uri.parse('${Constants.apiUrl}/buildings/photos/$photoId/order'),
+        Uri.parse('${Constants.baseUrl}/buildings/photos/$photoId/order'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -113,9 +118,9 @@ class BuildingAdminService {
     bool isFurnished = false,
   }) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.post(
-        Uri.parse('${Constants.apiUrl}/apartments'),
+        Uri.parse('${Constants.baseUrl}/apartments'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -145,9 +150,9 @@ class BuildingAdminService {
 
   Future<List<Map<String, dynamic>>> getApartmentsByBuilding(String buildingId) async {
     try {
-      final token = await _apiService.getToken();
+      final token = await _getToken();
       final response = await http.get(
-        Uri.parse('${Constants.apiUrl}/apartments/building/$buildingId'),
+        Uri.parse('${Constants.baseUrl}/apartments/building/$buildingId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

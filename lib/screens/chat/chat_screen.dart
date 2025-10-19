@@ -344,17 +344,18 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(Icons.photo_library_outlined),
           tooltip: 'Médias partagés',
         ),
-        IconButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => VoteScreen(channel: widget.channel),
-              ),
-            );
-          },
-          icon: const Icon(Icons.poll),
-          tooltip: 'Votes',
-        ),
+        if (widget.channel.type == 'ONE_TO_ONE')
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => VoteScreen(channel: widget.channel),
+                ),
+              );
+            },
+            icon: const Icon(Icons.poll),
+            tooltip: 'Votes',
+          ),
         IconButton(
           onPressed: () {
             _showChannelInfo();
@@ -430,7 +431,6 @@ class _ChatScreenState extends State<ChatScreen> {
         if (chatProvider.isLoadingMessages(widget.channel.id)) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (messages.isEmpty) {
           return _buildEmptyState();
         }

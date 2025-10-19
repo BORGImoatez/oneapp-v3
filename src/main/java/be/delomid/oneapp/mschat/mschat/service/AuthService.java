@@ -196,7 +196,7 @@ public class AuthService {
                 .email(resident.getEmail())
                 .fname(resident.getFname())
                 .lname(resident.getLname())
-                .role(resident.getRole())
+                .role(residentBuilding.getRoleInBuilding())
                 .accountStatus(resident.getAccountStatus())
                 .buildingId(residentBuilding.getBuilding().getBuildingId())
                 .apartmentId(apartmentId)

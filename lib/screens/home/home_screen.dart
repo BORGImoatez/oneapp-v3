@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/building_selection_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/channel_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -51,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
+
 
     if (_lastBuildingId != currentBuildingId) {
       print('DEBUG: HomeScreen - Building changed from $_lastBuildingId to $currentBuildingId');
@@ -298,6 +300,12 @@ class _HomeScreenState extends State<HomeScreen> {
           color: AppTheme.warningColor,
           onTap: () {
             // TODO: Navigate to notifications screen
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const NotificationsScreen(),
+              ),
+            );
+
           },
         );
       },
@@ -321,7 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, channelProvider, authProvider, child) {
             final recentChannels = channelProvider.channels.take(2).toList();
             final screenWidth = MediaQuery.of(context).size.width;
-            final isAdmin = authProvider.user?.isAdmin ?? false;
+            final isAdmin = authProvider.user?.role=='BUILDING_ADMIN';
+
+
 
             final quickAccessItems = <Widget>[
               QuickAccessCard(
