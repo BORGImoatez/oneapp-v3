@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../services/building_admin_service.dart';
 import '../../models/building_photo_model.dart';
 import '../../utils/app_theme.dart';
@@ -18,6 +18,7 @@ class BuildingDetailScreen extends StatefulWidget {
 
 class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
   final BuildingAdminService _adminService = BuildingAdminService();
+  final PageController _pageController = PageController();
 
   Map<String, dynamic>? _buildingData;
   List<BuildingPhotoModel> _photos = [];
@@ -28,6 +29,12 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
   void initState() {
     super.initState();
     _loadBuildingDetails();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadBuildingDetails() async {
@@ -142,57 +149,48 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
 
     return Stack(
       children: [
-        CarouselSlider(
-          options: CarouselOptions(
-            height: 250,
-            viewportFraction: 1.0,
-            enableInfiniteScroll: _photos.length > 1,
-            autoPlay: _photos.length > 1,
-            autoPlayInterval: const Duration(seconds: 5),
-            onPageChanged: (index, reason) {
+        SizedBox(
+          height: 250,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
               setState(() => _currentImageIndex = index);
             },
+            itemCount: _photos.length,
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: const BoxDecoration(color: Colors.black),
+                child: Image.network(
+                  _photos[index].photoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.broken_image, size: 60),
+                    );
+                  },
+                ),
+              );
+            },
           ),
-          items: _photos.map((photo) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Container(
-                  width: MediaQuery.of(context).size.width,
-                  decoration: const BoxDecoration(color: Colors.black),
-                  child: Image.network(
-                    photo.photoUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.broken_image, size: 60),
-                      );
-                    },
-                  ),
-                );
-              },
-            );
-          }).toList(),
         ),
         if (_photos.length > 1)
           Positioned(
-            bottom: 10,
+            bottom: 16,
             left: 0,
             right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _photos.asMap().entries.map((entry) {
-                return Container(
-                  width: 8.0,
-                  height: 8.0,
-                  margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white
-                        .withOpacity(_currentImageIndex == entry.key ? 0.9 : 0.4),
-                  ),
-                );
-              }).toList(),
+            child: Center(
+              child: SmoothPageIndicator(
+                controller: _pageController,
+                count: _photos.length,
+                effect: WormEffect(
+                  dotWidth: 8,
+                  dotHeight: 8,
+                  spacing: 8,
+                  dotColor: Colors.white.withOpacity(0.4),
+                  activeDotColor: Colors.white,
+                ),
+              ),
             ),
           ),
         if (_photos.length > 1)
