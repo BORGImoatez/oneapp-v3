@@ -35,6 +35,36 @@ public class Building {
     @Column(name = "year_of_construction")
     private Integer yearOfConstruction;
 
+    @Column(name = "number_of_floors")
+    private Integer numberOfFloors;
+
+    @Column(name = "building_state", length = 100)
+    private String buildingState;
+
+    @Column(name = "facade_width", precision = 10, scale = 2)
+    private Double facadeWidth;
+
+    @Column(name = "land_area", precision = 10, scale = 2)
+    private Double landArea;
+
+    @Column(name = "land_width", precision = 10, scale = 2)
+    private Double landWidth;
+
+    @Column(name = "built_area", precision = 10, scale = 2)
+    private Double builtArea;
+
+    @Column(name = "has_elevator")
+    private Boolean hasElevator;
+
+    @Column(name = "has_handicap_access")
+    private Boolean hasHandicapAccess;
+
+    @Column(name = "has_pool")
+    private Boolean hasPool;
+
+    @Column(name = "has_cable_tv")
+    private Boolean hasCableTv;
+
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "address_id")
     private Address address;

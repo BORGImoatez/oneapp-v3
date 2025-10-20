@@ -11,11 +11,21 @@ public class CreateBuildingRequest {
     
     @NotBlank(message = "Building label is required")
     private String buildingLabel;
-    
+
     private String buildingNumber;
     private String buildingPicture;
     private Integer yearOfConstruction;
-    
+    private Integer numberOfFloors;
+    private String buildingState;
+    private Double facadeWidth;
+    private Double landArea;
+    private Double landWidth;
+    private Double builtArea;
+    private Boolean hasElevator;
+    private Boolean hasHandicapAccess;
+    private Boolean hasPool;
+    private Boolean hasCableTv;
+
     @NotNull(message = "Address is required")
     private CreateAddressRequest address;
 }

@@ -6,6 +6,8 @@ import '../../utils/app_theme.dart';
 import 'add_apartment_screen.dart';
 import 'building_3d_view_screen.dart';
 import 'building_photos_screen.dart';
+import 'create_building_screen.dart';
+import 'building_detail_screen.dart';
 
 class AdminBuildingScreen extends StatefulWidget {
   const AdminBuildingScreen({super.key});
@@ -176,10 +178,27 @@ class _AdminBuildingScreenState extends State<AdminBuildingScreen> {
         ),
         const SizedBox(height: 12),
         _buildActionCard(
+          icon: Icons.info,
+          title: 'Détails de l\'immeuble',
+          subtitle: 'Voir toutes les informations',
+          color: Colors.blue,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BuildingDetailScreen(
+                  buildingId: _currentBuildingId!,
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildActionCard(
           icon: Icons.apartment,
           title: 'Ajouter un appartement',
           subtitle: 'Créer un nouveau bien dans l\'immeuble',
-          color: Colors.blue,
+          color: Colors.green,
           onTap: () async {
             final result = await Navigator.push(
               context,

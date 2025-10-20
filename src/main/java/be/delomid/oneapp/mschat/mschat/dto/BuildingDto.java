@@ -14,6 +14,16 @@ public class BuildingDto {
     private String buildingNumber;
     private String buildingPicture;
     private Integer yearOfConstruction;
+    private Integer numberOfFloors;
+    private String buildingState;
+    private Double facadeWidth;
+    private Double landArea;
+    private Double landWidth;
+    private Double builtArea;
+    private Boolean hasElevator;
+    private Boolean hasHandicapAccess;
+    private Boolean hasPool;
+    private Boolean hasCableTv;
     private AddressDto address;
     private List<ApartmentDto> apartments;
     private Long totalApartments;

@@ -169,4 +169,47 @@ class BuildingAdminService {
       throw Exception('Error loading apartments: $e');
     }
   }
+
+  Future<Map<String, dynamic>> createBuilding(Map<String, dynamic> buildingData) async {
+    try {
+      final token = await _getToken();
+      final response = await http.post(
+        Uri.parse('${Constants.baseUrl}/buildings'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(buildingData),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else {
+        throw Exception('Failed to create building: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error creating building: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getBuildingById(String buildingId) async {
+    try {
+      final token = await _getToken();
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/buildings/$buildingId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else {
+        throw Exception('Failed to load building');
+      }
+    } catch (e) {
+      throw Exception('Error loading building: $e');
+    }
+  }
 }

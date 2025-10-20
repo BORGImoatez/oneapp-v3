@@ -62,6 +62,16 @@ private final CountryRepository countryRepository;
                 .buildingNumber(request.getBuildingNumber())
                 .buildingPicture(request.getBuildingPicture())
                 .yearOfConstruction(request.getYearOfConstruction())
+                .numberOfFloors(request.getNumberOfFloors())
+                .buildingState(request.getBuildingState())
+                .facadeWidth(request.getFacadeWidth())
+                .landArea(request.getLandArea())
+                .landWidth(request.getLandWidth())
+                .builtArea(request.getBuiltArea())
+                .hasElevator(request.getHasElevator())
+                .hasHandicapAccess(request.getHasHandicapAccess())
+                .hasPool(request.getHasPool())
+                .hasCableTv(request.getHasCableTv())
                 .address(address)
                 .build();
 
@@ -106,6 +116,16 @@ private final CountryRepository countryRepository;
         building.setBuildingNumber(request.getBuildingNumber());
         building.setBuildingPicture(request.getBuildingPicture());
         building.setYearOfConstruction(request.getYearOfConstruction());
+        building.setNumberOfFloors(request.getNumberOfFloors());
+        building.setBuildingState(request.getBuildingState());
+        building.setFacadeWidth(request.getFacadeWidth());
+        building.setLandArea(request.getLandArea());
+        building.setLandWidth(request.getLandWidth());
+        building.setBuiltArea(request.getBuiltArea());
+        building.setHasElevator(request.getHasElevator());
+        building.setHasHandicapAccess(request.getHasHandicapAccess());
+        building.setHasPool(request.getHasPool());
+        building.setHasCableTv(request.getHasCableTv());
 
         // Update address
         Address address = building.getAddress();
@@ -154,6 +174,16 @@ private final CountryRepository countryRepository;
                 .buildingNumber(building.getBuildingNumber())
                 .buildingPicture(building.getBuildingPicture())
                 .yearOfConstruction(building.getYearOfConstruction())
+                .numberOfFloors(building.getNumberOfFloors())
+                .buildingState(building.getBuildingState())
+                .facadeWidth(building.getFacadeWidth())
+                .landArea(building.getLandArea())
+                .landWidth(building.getLandWidth())
+                .builtArea(building.getBuiltArea())
+                .hasElevator(building.getHasElevator())
+                .hasHandicapAccess(building.getHasHandicapAccess())
+                .hasPool(building.getHasPool())
+                .hasCableTv(building.getHasCableTv())
                 .address(addressDto)
                 .totalApartments(totalApartments)
                 .occupiedApartments(occupiedApartments)
