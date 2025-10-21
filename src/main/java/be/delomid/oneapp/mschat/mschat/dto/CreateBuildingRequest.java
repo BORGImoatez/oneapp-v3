@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class CreateBuildingRequest {
     
@@ -17,10 +19,10 @@ public class CreateBuildingRequest {
     private Integer yearOfConstruction;
     private Integer numberOfFloors;
     private String buildingState;
-    private Double facadeWidth;
-    private Double landArea;
-    private Double landWidth;
-    private Double builtArea;
+    private BigDecimal facadeWidth;
+    private BigDecimal  landArea;
+    private BigDecimal  landWidth;
+    private BigDecimal  builtArea;
     private Boolean hasElevator;
     private Boolean hasHandicapAccess;
     private Boolean hasPool;

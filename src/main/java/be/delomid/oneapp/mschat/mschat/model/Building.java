@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,16 +43,16 @@ public class Building {
     private String buildingState;
 
     @Column(name = "facade_width", precision = 10, scale = 2)
-    private Double facadeWidth;
+    private BigDecimal facadeWidth;
 
     @Column(name = "land_area", precision = 10, scale = 2)
-    private Double landArea;
+    private BigDecimal  landArea;
 
     @Column(name = "land_width", precision = 10, scale = 2)
-    private Double landWidth;
+    private BigDecimal  landWidth;
 
     @Column(name = "built_area", precision = 10, scale = 2)
-    private Double builtArea;
+    private BigDecimal  builtArea;
 
     @Column(name = "has_elevator")
     private Boolean hasElevator;
