@@ -14,6 +14,7 @@ import '../../widgets/building_selector_dropdown.dart';
 import '../chat/chat_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../admin/admin_building_screen.dart';
+import '../apartment/my_apartment_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -334,6 +335,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
             final quickAccessItems = <Widget>[
+              if (authProvider.user?.apartmentId != null)
+                QuickAccessCard(
+                  title: 'Mon Appartement',
+                  subtitle: 'Gérer les détails',
+                  icon: Icons.home,
+                  color: Colors.green,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => MyApartmentScreen(
+                          apartmentId: authProvider.user!.apartmentId!,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               QuickAccessCard(
                 title: 'Dernier Chat',
                 subtitle: recentChannels.isNotEmpty
