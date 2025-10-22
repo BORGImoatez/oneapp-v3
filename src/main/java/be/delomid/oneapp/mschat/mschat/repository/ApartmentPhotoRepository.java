@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ApartmentPhotoRepository extends JpaRepository<ApartmentPhoto, Long> {
-    List<ApartmentPhoto> findByApartmentIdOrderByDisplayOrderAsc(Long apartmentId);
-    void deleteByApartmentId(Long apartmentId);
+    List<ApartmentPhoto> findByApartmentIdOrderByDisplayOrderAsc(String apartmentId);
+    void deleteByApartmentId(String apartmentId);
 }

@@ -19,7 +19,7 @@ public class ApartmentExterior {
     private Long id;
 
     @Column(name = "apartment_id", nullable = false, unique = true)
-    private Long apartmentId;
+    private String apartmentId;
 
     @Column(name = "surface_terrasse", precision = 10, scale = 2)
     private BigDecimal surfaceTerrasse;
@@ -31,5 +31,5 @@ public class ApartmentExterior {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "updated_by")
-    private Long updatedBy;
+    private String updatedBy;
 }

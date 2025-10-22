@@ -18,7 +18,7 @@ public class ApartmentPhoto {
     private Long id;
 
     @Column(name = "apartment_id", nullable = false)
-    private Long apartmentId;
+    private String apartmentId;
 
     @Column(name = "photo_url", nullable = false, length = 500)
     private String photoUrl;
@@ -30,5 +30,5 @@ public class ApartmentPhoto {
     private LocalDateTime uploadedAt = LocalDateTime.now();
 
     @Column(name = "uploaded_by")
-    private Long uploadedBy;
+    private String uploadedBy;
 }

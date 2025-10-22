@@ -34,12 +34,12 @@ public class ApartmentDetailsService {
     private final FileService fileService;
     private final ObjectMapper objectMapper;
 
-    public ApartmentDetailsDto getApartmentDetails(Long apartmentId) {
+    public ApartmentDetailsDto getApartmentDetails(String apartmentId) {
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
 
-        Long residentId = SecurityContextUtil.getCurrentUserId();
-        verifyResidentHasAccess(residentId, apartment.getBuildingId(), apartmentId);
+        String residentId = SecurityContextUtil.getCurrentUserId();
+        verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), apartmentId);
 
         ApartmentDetailsDto dto = new ApartmentDetailsDto();
         dto.setApartmentId(apartmentId);
@@ -67,12 +67,12 @@ public class ApartmentDetailsService {
     }
 
     @Transactional
-    public ApartmentDetailsDto updateApartmentDetails(Long apartmentId, UpdateApartmentDetailsRequest request) {
+    public ApartmentDetailsDto updateApartmentDetails(String apartmentId, UpdateApartmentDetailsRequest request) {
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
 
-        Long residentId = SecurityContextUtil.getCurrentUserId();
-        verifyResidentHasAccess(residentId, apartment.getBuildingId(), apartmentId);
+        String residentId = SecurityContextUtil.getCurrentUserId();
+        verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), apartmentId);
 
         if (request.getGeneralInfo() != null) {
             updateGeneralInfo(apartmentId, request.getGeneralInfo(), residentId);
@@ -98,14 +98,14 @@ public class ApartmentDetailsService {
     }
 
     @Transactional
-    public ApartmentPhotoDto uploadPhoto(Long apartmentId, MultipartFile file) {
+    public ApartmentPhotoDto uploadPhoto(String apartmentId, MultipartFile  file) {
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
 
-        Long residentId = SecurityContextUtil.getCurrentUserId();
-        verifyResidentHasAccess(residentId, apartment.getBuildingId(), apartmentId);
+        String residentId = SecurityContextUtil.getCurrentUserId();
+        verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), apartmentId);
 
-        String photoUrl = fileService.uploadFile(file, "apartments/" + apartmentId);
+        String photoUrl = fileService.uploadFile(file, "apartments/" + apartmentId,residentId).toString();
 
         List<ApartmentPhoto> existingPhotos = photoRepository.findByApartmentIdOrderByDisplayOrderAsc(apartmentId);
         int nextOrder = existingPhotos.size();
@@ -129,42 +129,44 @@ public class ApartmentDetailsService {
         Apartment apartment = apartmentRepository.findById(photo.getApartmentId())
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
 
-        Long residentId = SecurityContextUtil.getCurrentUserId();
-        verifyResidentHasAccess(residentId, apartment.getBuildingId(), photo.getApartmentId());
+        String residentId = SecurityContextUtil.getCurrentUserId();
+        verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), photo.getApartmentId());
 
         photoRepository.delete(photo);
     }
 
     @Transactional
-    public void reorderPhotos(Long apartmentId, List<Long> photoIds) {
+    public void reorderPhotos(String apartmentId, List<Long> photoIds) {
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
 
-        Long residentId = SecurityContextUtil.getCurrentUserId();
-        verifyResidentHasAccess(residentId, apartment.getBuildingId(), apartmentId);
+        String residentId = SecurityContextUtil.getCurrentUserId();
+        verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), apartmentId);
 
         for (int i = 0; i < photoIds.size(); i++) {
             Long photoId = photoIds.get(i);
+            final int displayOrder = i; // make a final copy of i
             photoRepository.findById(photoId).ifPresent(photo -> {
                 if (photo.getApartmentId().equals(apartmentId)) {
-                    photo.setDisplayOrder(i);
+                    photo.setDisplayOrder(displayOrder);
                     photoRepository.save(photo);
                 }
             });
         }
+
     }
 
-    private void verifyResidentHasAccess(Long residentId, Long buildingId, Long apartmentId) {
+    private void verifyResidentHasAccess(String residentId, String buildingId, String apartmentId) {
         ResidentBuilding rb = residentBuildingRepository
                 .findByResidentIdAndBuildingId(residentId, buildingId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
 
-        if (rb.getApartmentId() != null && !rb.getApartmentId().equals(apartmentId)) {
+        if (rb.getApartment().getIdApartment() != null && !rb.getApartment().getIdApartment().equals(apartmentId)) {
             throw new RuntimeException("You can only manage your own apartment");
         }
     }
 
-    private void updateGeneralInfo(Long apartmentId, UpdateApartmentDetailsRequest.GeneralInfoRequest request, Long residentId) {
+    private void updateGeneralInfo(String apartmentId, UpdateApartmentDetailsRequest.GeneralInfoRequest request, String residentId) {
         ApartmentGeneralInfo info = generalInfoRepository.findByApartmentId(apartmentId)
                 .orElse(new ApartmentGeneralInfo());
 
@@ -179,7 +181,7 @@ public class ApartmentDetailsService {
         generalInfoRepository.save(info);
     }
 
-    private void updateInterior(Long apartmentId, UpdateApartmentDetailsRequest.InteriorRequest request, Long residentId) {
+    private void updateInterior(String apartmentId, UpdateApartmentDetailsRequest.InteriorRequest request, String residentId) {
         ApartmentInterior interior = interiorRepository.findByApartmentId(apartmentId)
                 .orElse(new ApartmentInterior());
 
@@ -208,7 +210,7 @@ public class ApartmentDetailsService {
         interiorRepository.save(interior);
     }
 
-    private void updateExterior(Long apartmentId, UpdateApartmentDetailsRequest.ExteriorRequest request, Long residentId) {
+    private void updateExterior(String apartmentId, UpdateApartmentDetailsRequest.ExteriorRequest request, String residentId) {
         ApartmentExterior exterior = exteriorRepository.findByApartmentId(apartmentId)
                 .orElse(new ApartmentExterior());
 
@@ -221,7 +223,7 @@ public class ApartmentDetailsService {
         exteriorRepository.save(exterior);
     }
 
-    private void updateInstallations(Long apartmentId, UpdateApartmentDetailsRequest.InstallationsRequest request, Long residentId) {
+    private void updateInstallations(String apartmentId, UpdateApartmentDetailsRequest.InstallationsRequest request, String residentId) {
         ApartmentInstallations installations = installationsRepository.findByApartmentId(apartmentId)
                 .orElse(new ApartmentInstallations());
 
@@ -238,7 +240,7 @@ public class ApartmentDetailsService {
         installationsRepository.save(installations);
     }
 
-    private void updateEnergie(Long apartmentId, UpdateApartmentDetailsRequest.EnergieRequest request, Long residentId) {
+    private void updateEnergie(String apartmentId, UpdateApartmentDetailsRequest.EnergieRequest request, String residentId) {
         ApartmentEnergie energie = energieRepository.findByApartmentId(apartmentId)
                 .orElse(new ApartmentEnergie());
 

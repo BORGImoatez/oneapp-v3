@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApartmentDetailsDto {
-    private Long apartmentId;
+    private String apartmentId;
     private String apartmentNumber;
 
     private List<ApartmentPhotoDto> photos;

@@ -5,7 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/apartment_details_service.dart';
 
 class EditApartmentSectionScreen extends StatefulWidget {
-  final int apartmentId;
+  final String apartmentId;
   final String section;
   final ApartmentDetailsModel? currentData;
 
@@ -126,14 +126,11 @@ class _EditApartmentSectionScreenState
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('Not authenticated');
 
       final updates = _buildUpdatePayload();
 
       await _service.updateApartmentDetails(
         widget.apartmentId,
-        token,
         updates,
       );
 

@@ -19,7 +19,7 @@ public class ApartmentEnergie {
     private Long id;
 
     @Column(name = "apartment_id", nullable = false, unique = true)
-    private Long apartmentId;
+    private String apartmentId;
 
     @Column(name = "classe_energetique", length = 10)
     private String classeEnergetique;
@@ -46,5 +46,5 @@ public class ApartmentEnergie {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "updated_by")
-    private Long updatedBy;
+    private String updatedBy;
 }

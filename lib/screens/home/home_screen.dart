@@ -345,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => MyApartmentScreen(
-                          apartmentId: authProvider.user!.apartmentId!,
+                          apartmentId: authProvider.user!.apartmentId!, // force non-null
                         ),
                       ),
                     );

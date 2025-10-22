@@ -1,16 +1,21 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:mgi/services/storage_service.dart';
 import 'dart:convert';
 import '../models/apartment_details_model.dart';
 import '../utils/constants.dart';
 
 class ApartmentDetailsService {
   final String baseUrl = '${Constants.baseUrl}/api/apartments';
-
+  Future<String?> _getToken() async {
+    return await StorageService.getToken();
+  }
   Future<ApartmentDetailsModel> getApartmentDetails(
-      int apartmentId, String token) async {
+      String apartmentId) async {
     try {
+      final token = await _getToken();
+
       final response = await http.get(
         Uri.parse('$baseUrl/$apartmentId/details'),
         headers: {
@@ -31,11 +36,12 @@ class ApartmentDetailsService {
   }
 
   Future<ApartmentDetailsModel> updateApartmentDetails(
-    int apartmentId,
-    String token,
+    String apartmentId,
     Map<String, dynamic> updates,
   ) async {
     try {
+      final token = await _getToken();
+
       final response = await http.put(
         Uri.parse('$baseUrl/$apartmentId/details'),
         headers: {
@@ -57,8 +63,7 @@ class ApartmentDetailsService {
   }
 
   Future<ApartmentPhotoModel> uploadPhoto(
-    int apartmentId,
-    String token,
+    String apartmentId,
     File imageFile,
   ) async {
     try {
@@ -66,18 +71,20 @@ class ApartmentDetailsService {
         'POST',
         Uri.parse('$baseUrl/$apartmentId/details/photos'),
       );
+      final token = await _getToken();
 
       request.headers['Authorization'] = 'Bearer $token';
 
       var stream = http.ByteStream(imageFile.openRead());
       var length = await imageFile.length();
+      final mimeType = _getMimeType(imageFile.path);
 
       var multipartFile = http.MultipartFile(
         'file',
         stream,
         length,
         filename: imageFile.path.split('/').last,
-        contentType: MediaType('image', 'jpeg'),
+        contentType: MediaType.parse(mimeType),
       );
 
       request.files.add(multipartFile);
@@ -89,15 +96,35 @@ class ApartmentDetailsService {
         final data = json.decode(utf8.decode(response.bodyBytes));
         return ApartmentPhotoModel.fromJson(data);
       } else {
-        throw Exception('Failed to upload photo');
+         final errorBody = utf8.decode(response.bodyBytes);
+        print('❌ Upload photo failed: ${response.statusCode}');
+        print('➡️ Response body: $errorBody');
+        throw Exception('Failed to upload photo: $response');
       }
     } catch (e) {
       throw Exception('Error uploading photo: $e');
     }
   }
-
-  Future<void> deletePhoto(int photoId, String token) async {
+  String _getMimeType(String path) {
+    final extension = path.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
+  }
+  Future<void> deletePhoto(int photoId) async {
     try {
+      final token = await _getToken();
+
       final response = await http.delete(
         Uri.parse('$baseUrl/0/details/photos/$photoId'),
         headers: {
@@ -115,10 +142,10 @@ class ApartmentDetailsService {
 
   Future<void> reorderPhotos(
     int apartmentId,
-    String token,
     List<int> photoIds,
   ) async {
     try {
+      final token = await _getToken();
       final response = await http.put(
         Uri.parse('$baseUrl/$apartmentId/details/photos/reorder'),
         headers: {

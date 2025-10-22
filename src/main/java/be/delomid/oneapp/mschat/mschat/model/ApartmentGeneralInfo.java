@@ -19,7 +19,7 @@ public class ApartmentGeneralInfo {
     private Long id;
 
     @Column(name = "apartment_id", nullable = false, unique = true)
-    private Long apartmentId;
+    private String apartmentId;
 
     @Column(name = "nb_chambres")
     private Integer nbChambres;
@@ -36,5 +36,5 @@ public class ApartmentGeneralInfo {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "updated_by")
-    private Long updatedBy;
+    private String updatedBy;
 }

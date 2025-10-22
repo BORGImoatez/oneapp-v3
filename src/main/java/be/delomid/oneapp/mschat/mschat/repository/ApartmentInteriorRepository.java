@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface ApartmentInteriorRepository extends JpaRepository<ApartmentInterior, Long> {
-    Optional<ApartmentInterior> findByApartmentId(Long apartmentId);
-    void deleteByApartmentId(Long apartmentId);
+    Optional<ApartmentInterior> findByApartmentId(String apartmentId);
+    void deleteByApartmentId(String apartmentId);
 }

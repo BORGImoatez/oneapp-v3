@@ -9,7 +9,7 @@ import '../../services/apartment_details_service.dart';
 import 'edit_apartment_section_screen.dart';
 
 class MyApartmentScreen extends StatefulWidget {
-  final int apartmentId;
+  final String apartmentId;
 
   const MyApartmentScreen({
     Key? key,
@@ -26,22 +26,31 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
   ApartmentDetailsModel? _details;
   bool _isLoading = true;
   int _currentPhotoIndex = 0;
+  bool _hasLoadedOnce = false; // Add this flag
 
   @override
   void initState() {
     super.initState();
-    _loadDetails();
+    // Don't call _loadDetails() here
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load details only once when dependencies are ready
+    if (!_hasLoadedOnce) {
+      _hasLoadedOnce = true;
+      _loadDetails();
+    }
+  }
   Future<void> _loadDetails() async {
     setState(() => _isLoading = true);
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('Not authenticated');
+
 
       final details =
-          await _service.getApartmentDetails(widget.apartmentId, token);
+      await _service.getApartmentDetails(widget.apartmentId);
       setState(() {
         _details = details;
         _isLoading = false;
@@ -55,7 +64,6 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
       }
     }
   }
-
   Future<void> _pickAndUploadImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -68,8 +76,7 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
       if (image == null) return;
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('Not authenticated');
+
 
       showDialog(
         context: context,
@@ -79,8 +86,7 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
 
       await _service.uploadPhoto(
         widget.apartmentId,
-        token,
-        File(image.path),
+         File(image.path),
       );
 
       Navigator.pop(context);
@@ -154,10 +160,9 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      if (token == null) throw Exception('Not authenticated');
 
-      await _service.deletePhoto(photoId, token);
+
+      await _service.deletePhoto(photoId);
       await _loadDetails();
 
       if (mounted) {

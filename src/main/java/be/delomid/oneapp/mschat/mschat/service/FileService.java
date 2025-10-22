@@ -182,8 +182,6 @@ public class FileService {
         if (contentType == null) {
             throw new IllegalArgumentException("Invalid file type");
         }
-
-        // Validation selon le type
         switch (type.toUpperCase()) {
             case "IMAGE":
                 if (!contentType.startsWith("image/")) {
@@ -196,7 +194,6 @@ public class FileService {
                 }
                 break;
             case "FILE":
-                // Accepter tous les types de fichiers pour FILE
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported file type: " + type);

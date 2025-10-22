@@ -1,5 +1,5 @@
 class ApartmentDetailsModel {
-  final int apartmentId;
+  final String apartmentId;
   final String apartmentNumber;
   final List<ApartmentPhotoModel> photos;
   final GeneralInfoModel? generalInfo;
@@ -61,11 +61,11 @@ class ApartmentDetailsModel {
 
 class ApartmentPhotoModel {
   final int id;
-  final int apartmentId;
+  final String apartmentId;
   final String photoUrl;
   final int displayOrder;
   final DateTime uploadedAt;
-  final int? uploadedBy;
+  final String? uploadedBy;
 
   ApartmentPhotoModel({
     required this.id,

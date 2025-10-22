@@ -18,7 +18,7 @@ public class ApartmentInstallations {
     private Long id;
 
     @Column(name = "apartment_id", nullable = false, unique = true)
-    private Long apartmentId;
+    private String apartmentId;
 
     private Boolean ascenseur = false;
 
@@ -39,5 +39,5 @@ public class ApartmentInstallations {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "updated_by")
-    private Long updatedBy;
+    private String updatedBy;
 }

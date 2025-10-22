@@ -25,14 +25,14 @@ public class ApartmentDetailsController {
 
     @GetMapping
     @Operation(summary = "Get apartment details", description = "Get all details for an apartment")
-    public ResponseEntity<ApartmentDetailsDto> getApartmentDetails(@PathVariable Long apartmentId) {
+    public ResponseEntity<ApartmentDetailsDto> getApartmentDetails(@PathVariable String apartmentId) {
         return ResponseEntity.ok(apartmentDetailsService.getApartmentDetails(apartmentId));
     }
 
     @PutMapping
     @Operation(summary = "Update apartment details", description = "Update apartment details sections")
     public ResponseEntity<ApartmentDetailsDto> updateApartmentDetails(
-            @PathVariable Long apartmentId,
+            @PathVariable String apartmentId,
             @RequestBody UpdateApartmentDetailsRequest request) {
         return ResponseEntity.ok(apartmentDetailsService.updateApartmentDetails(apartmentId, request));
     }
@@ -40,7 +40,7 @@ public class ApartmentDetailsController {
     @PostMapping("/photos")
     @Operation(summary = "Upload apartment photo", description = "Upload a photo for the apartment")
     public ResponseEntity<ApartmentPhotoDto> uploadPhoto(
-            @PathVariable Long apartmentId,
+            @PathVariable String apartmentId,
             @RequestParam("file") MultipartFile file) {
         return ResponseEntity.ok(apartmentDetailsService.uploadPhoto(apartmentId, file));
     }
@@ -55,7 +55,7 @@ public class ApartmentDetailsController {
     @PutMapping("/photos/reorder")
     @Operation(summary = "Reorder apartment photos", description = "Reorder the display order of apartment photos")
     public ResponseEntity<Void> reorderPhotos(
-            @PathVariable Long apartmentId,
+            @PathVariable String apartmentId,
             @RequestBody List<Long> photoIds) {
         apartmentDetailsService.reorderPhotos(apartmentId, photoIds);
         return ResponseEntity.ok().build();
