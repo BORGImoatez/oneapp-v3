@@ -59,6 +59,22 @@ public class EmailService {
             """, purpose, otpCode);
     }
     
+    public void sendWelcomeEmail(String to, String fullName, String buildingName, String apartmentNumber, String email, String temporaryPassword) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("Bienvenue dans votre immeuble - MSChat");
+            message.setText(buildWelcomeEmailContent(fullName, buildingName, apartmentNumber, email, temporaryPassword));
+
+            mailSender.send(message);
+            log.debug("Welcome email sent to: {}", to);
+
+        } catch (Exception e) {
+            log.error("Failed to send welcome email to: {}", to, e);
+            throw new RuntimeException("Failed to send welcome email", e);
+        }
+    }
+
     private String buildAccountStatusEmailContent(String status, String reason) {
         String statusText = switch (status) {
             case "ACTIVE" -> "approuvé";
@@ -66,16 +82,43 @@ public class EmailService {
             case "REJECTED" -> "rejeté";
             default -> status.toLowerCase();
         };
-        
+
         return String.format("""
             Bonjour,
-            
+
             Le statut de votre compte MSChat a été mis à jour : %s
-            
+
             %s
-            
+
             Cordialement,
             L'équipe MSChat
             """, statusText, reason != null ? "Raison : " + reason : "");
+    }
+
+    private String buildWelcomeEmailContent(String fullName, String buildingName, String apartmentNumber, String email, String temporaryPassword) {
+        return String.format("""
+            Bonjour %s,
+
+            Bienvenue dans votre immeuble %s !
+
+            Votre compte résident a été créé avec succès pour l'appartement %s.
+
+            Vos identifiants de connexion :
+            - Email : %s
+            - Mot de passe temporaire : %s
+
+            IMPORTANT : Pour des raisons de sécurité, veuillez changer ce mot de passe temporaire lors de votre première connexion.
+
+            Vous pouvez maintenant :
+            - Accéder aux espaces de discussion de l'immeuble
+            - Consulter les documents partagés
+            - Participer aux votes et décisions
+            - Contacter les autres résidents
+
+            Téléchargez l'application MSChat et connectez-vous dès maintenant !
+
+            Cordialement,
+            L'équipe de gestion de votre immeuble
+            """, fullName, buildingName, apartmentNumber, email, temporaryPassword);
     }
 }

@@ -1,9 +1,13 @@
 package be.delomid.oneapp.mschat.mschat.service;
 
+import be.delomid.oneapp.mschat.mschat.dto.AddResidentToApartmentRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.model.*;
 import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,10 +23,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class AdminService {
-    
+
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
+    private final BuildingRepository buildingRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
     
     @PreAuthorize("hasRole('BUILDING_ADMIN') or hasRole('GROUP_ADMIN') or hasRole('SUPER_ADMIN')")
     public Page<ResidentDto> getPendingRegistrations(String adminId, Pageable pageable) {
@@ -150,11 +157,88 @@ public class AdminService {
     @PreAuthorize("hasRole('BUILDING_ADMIN') or hasRole('GROUP_ADMIN') or hasRole('SUPER_ADMIN')")
     public List<ResidentDto> getBuildingResidents(String adminId, String buildingId) {
         validateBuildingAdminAccess(adminId, buildingId);
-        
+
         List<Resident> residents = residentRepository.findByBuildingId(buildingId);
         return residents.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    @PreAuthorize("hasRole('BUILDING_ADMIN') or hasRole('GROUP_ADMIN') or hasRole('SUPER_ADMIN')")
+    @Transactional
+    public ResidentDto addResidentToApartment(String adminId, AddResidentToApartmentRequest request) {
+        Resident admin = residentRepository.findById(adminId)
+                .orElseThrow(() -> new IllegalArgumentException("Admin not found"));
+
+        if (admin.getRole() == UserRole.RESIDENT) {
+            throw new IllegalArgumentException("Insufficient privileges");
+        }
+
+        Apartment apartment = apartmentRepository.findById(request.getApartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Apartment not found"));
+
+        Building building = apartment.getBuilding();
+
+        if (admin.getRole() == UserRole.BUILDING_ADMIN &&
+            !building.getBuildingId().equals(admin.getManagedBuildingId())) {
+            throw new IllegalArgumentException("Admin can only add residents to their managed building");
+        }
+
+        residentRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
+            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+        });
+
+        String temporaryPassword = generateTemporaryPassword();
+
+        Resident resident = Resident.builder()
+                .idUsers(java.util.UUID.randomUUID().toString())
+                .fname(request.getFname())
+                .lname(request.getLname())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(temporaryPassword))
+                .phoneNumber(request.getPhoneNumber())
+                .role(UserRole.RESIDENT)
+                .accountStatus(AccountStatus.ACTIVE)
+                .isEnabled(true)
+                .build();
+
+        resident = residentRepository.save(resident);
+
+        ResidentBuilding residentBuilding = ResidentBuilding.builder()
+                .resident(resident)
+                .building(building)
+                .apartment(apartment)
+                .roleInBuilding(UserRole.RESIDENT)
+                .isActive(true)
+                .build();
+
+        residentBuildingRepository.save(residentBuilding);
+
+        emailService.sendWelcomeEmail(
+                resident.getEmail(),
+                resident.getFname() + " " + resident.getLname(),
+                building.getName(),
+                apartment.getNumber(),
+                resident.getEmail(),
+                temporaryPassword
+        );
+
+        log.debug("Resident {} added to apartment {} by admin {}",
+                resident.getIdUsers(), apartment.getIdApartment(), adminId);
+
+        return convertToDto(resident);
+    }
+
+    private String generateTemporaryPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder password = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+
+        for (int i = 0; i < 12; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return password.toString();
     }
     
     private void validateAdminAccess(String adminId, String residentId) {

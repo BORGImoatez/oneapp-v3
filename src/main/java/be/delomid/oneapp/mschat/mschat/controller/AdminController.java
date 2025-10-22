@@ -1,7 +1,9 @@
 package be.delomid.oneapp.mschat.mschat.controller;
 
+import be.delomid.oneapp.mschat.mschat.dto.AddResidentToApartmentRequest;
 import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -75,13 +77,23 @@ public class AdminController {
     public ResponseEntity<List<ResidentDto>> getBuildingResidents(
             @PathVariable String buildingId,
             Authentication authentication) {
-        
+
         String adminId = getUserId(authentication);
         List<ResidentDto> residents = adminService.getBuildingResidents(adminId, buildingId);
         return ResponseEntity.ok(residents);
     }
-    
+
+    @PostMapping("/add-resident-to-apartment")
+    public ResponseEntity<ResidentDto> addResidentToApartment(
+            @Valid @RequestBody AddResidentToApartmentRequest request,
+            Authentication authentication) {
+
+        String adminId = getUserId(authentication);
+        ResidentDto resident = adminService.addResidentToApartment(adminId, request);
+        return ResponseEntity.ok(resident);
+    }
+
     private String getUserId(Authentication authentication) {
-        return authentication.getName(); // Sera l'ID utilisateur après configuration JWT
+        return authentication.getName();
     }
 }

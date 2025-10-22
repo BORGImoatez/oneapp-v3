@@ -3,6 +3,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../services/building_admin_service.dart';
 import '../../models/building_photo_model.dart';
 import '../../utils/app_theme.dart';
+import 'add_resident_screen.dart';
 
 class BuildingDetailScreen extends StatefulWidget {
   final String buildingId;
@@ -22,6 +23,7 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
 
   Map<String, dynamic>? _buildingData;
   List<BuildingPhotoModel> _photos = [];
+  List<Map<String, dynamic>> _apartments = [];
   bool _isLoading = true;
   int _currentImageIndex = 0;
 
@@ -43,10 +45,12 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
     try {
       final building = await _adminService.getBuildingById(widget.buildingId);
       final photos = await _adminService.getBuildingPhotos(widget.buildingId);
+      final apartments = await _adminService.getApartmentsByBuilding(widget.buildingId);
 
       setState(() {
         _buildingData = building;
         _photos = photos;
+        _apartments = apartments;
       });
     } catch (e) {
       if (mounted) {
@@ -119,6 +123,8 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
                       color: Colors.teal,
                       children: _buildFacilitiesInfo(),
                     ),
+                    const SizedBox(height: 12),
+                    _buildApartmentsSection(),
                   ],
                 ),
               ),
@@ -393,6 +399,119 @@ class _BuildingDetailScreenState extends State<BuildingDetailScreen> {
             size: 20,
             color: isAvailable ? Colors.green : Colors.grey,
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApartmentsSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.apartment,
+                    color: Colors.deepPurple,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Appartements (${_apartments.length})',
+                    style: AppTheme.titleStyle.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          if (_apartments.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Aucun appartement'),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _apartments.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final apartment = _apartments[index];
+                final hasResident = apartment['resident'] != null;
+                final resident = apartment['resident'];
+
+                return ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: hasResident
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      hasResident ? Icons.check_circle : Icons.home,
+                      color: hasResident ? Colors.green : Colors.orange,
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    apartment['number'] ?? 'N/A',
+                    style: AppTheme.titleStyle.copyWith(fontSize: 14),
+                  ),
+                  subtitle: hasResident
+                      ? Text(
+                          '${resident['fname']} ${resident['lname']}',
+                          style: AppTheme.bodyStyle.copyWith(fontSize: 12),
+                        )
+                      : Text(
+                          'Disponible',
+                          style: AppTheme.bodyStyle.copyWith(
+                            fontSize: 12,
+                            color: Colors.orange,
+                          ),
+                        ),
+                  trailing: hasResident
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.person_add, color: Colors.blue),
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddResidentScreen(
+                                  apartmentId: apartment['idApartment'],
+                                  apartmentNumber: apartment['number'],
+                                ),
+                              ),
+                            );
+                            if (result == true) {
+                              _loadBuildingDetails();
+                            }
+                          },
+                        ),
+                );
+              },
+            ),
         ],
       ),
     );
