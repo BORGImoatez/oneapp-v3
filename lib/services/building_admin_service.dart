@@ -212,4 +212,39 @@ class BuildingAdminService {
       throw Exception('Error loading building: $e');
     }
   }
+
+  Future<Map<String, dynamic>> addResidentToApartment({
+    required String fname,
+    required String lname,
+    required String email,
+    String? phoneNumber,
+    required String apartmentId,
+  }) async {
+    try {
+      final token = await _getToken();
+      final response = await http.post(
+        Uri.parse('${Constants.baseUrl}/admin/add-resident-to-apartment'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'fname': fname,
+          'lname': lname,
+          'email': email,
+          'phoneNumber': phoneNumber,
+          'apartmentId': apartmentId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else {
+        final errorBody = json.decode(utf8.decode(response.bodyBytes));
+        throw Exception(errorBody['message'] ?? 'Failed to add resident');
+      }
+    } catch (e) {
+      throw Exception('Error adding resident: $e');
+    }
+  }
 }

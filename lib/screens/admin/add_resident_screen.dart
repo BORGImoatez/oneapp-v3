@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
-import '../../services/building_context_service.dart';
+import '../../services/building_admin_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -21,8 +20,7 @@ class AddResidentScreen extends StatefulWidget {
 
 class _AddResidentScreenState extends State<AddResidentScreen> {
   final _formKey = GlobalKey<FormState>();
-  final ApiService _apiService = ApiService();
-  final BuildingContextService _contextService = BuildingContextService();
+  final BuildingAdminService _adminService = BuildingAdminService();
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -46,21 +44,12 @@ class _AddResidentScreenState extends State<AddResidentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await _contextService.getToken();
-      if (token == null) {
-        throw Exception('Token non disponible');
-      }
-
-      final response = await _apiService.post(
-        '/admin/add-resident-to-apartment',
-        {
-          'fname': _firstNameController.text.trim(),
-          'lname': _lastNameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phoneNumber': _phoneController.text.trim(),
-          'apartmentId': widget.apartmentId,
-        },
-        token: token,
+      await _adminService.addResidentToApartment(
+        fname: _firstNameController.text.trim(),
+        lname: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        apartmentId: widget.apartmentId,
       );
 
       if (!mounted) return;
