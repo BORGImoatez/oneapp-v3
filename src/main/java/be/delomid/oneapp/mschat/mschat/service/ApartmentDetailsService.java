@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -105,7 +106,8 @@ public class ApartmentDetailsService {
         String residentId = SecurityContextUtil.getCurrentUserId();
         verifyResidentHasAccess(residentId, apartment.getBuilding().getBuildingId(), apartmentId);
 
-        String photoUrl = fileService.uploadFile(file, "apartments/" + apartmentId,residentId).toString();
+        Map<String, Object> uploadResult = fileService.uploadFile(file, "IMAGE", residentId);
+        String photoUrl = uploadResult.get("url").toString();
 
         List<ApartmentPhoto> existingPhotos = photoRepository.findByApartmentIdOrderByDisplayOrderAsc(apartmentId);
         int nextOrder = existingPhotos.size();
