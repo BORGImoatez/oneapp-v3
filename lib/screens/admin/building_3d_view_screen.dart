@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
+import '../../widgets/custom_button.dart';
+import 'add_resident_screen.dart';
 
 class Building3DViewScreen extends StatefulWidget {
   final String buildingId;
@@ -51,12 +53,12 @@ class _Building3DViewScreenState extends State<Building3DViewScreen> {
     return apartment['resident'] != null ? 'Occupé' : 'Vide';
   }
 
-  void _showApartmentDetails(Map<String, dynamic> apartment) {
+  Future<void> _showApartmentDetails(Map<String, dynamic> apartment) async {
     setState(() {
       _selectedApartment = apartment;
     });
 
-    showModalBottomSheet(
+    final result = await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -159,13 +161,36 @@ class _Building3DViewScreenState extends State<Building3DViewScreen> {
                   const SizedBox(height: 12),
                   _buildDetailRow(
                     'Nom',
-                    '${apartment['resident']['firstName'] ?? ''} ${apartment['resident']['lastName'] ?? ''}'
+                    '${apartment['resident']['fname'] ?? ''} ${apartment['resident']['lname'] ?? ''}'
                         .trim(),
                   ),
                   if (apartment['resident']['email'] != null)
                     _buildDetailRow('Email', apartment['resident']['email']),
                   if (apartment['resident']['phoneNumber'] != null)
                     _buildDetailRow('Téléphone', apartment['resident']['phoneNumber']),
+                ] else ...[
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  CustomButton(
+                    text: 'Ajouter un résident',
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      final added = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddResidentScreen(
+                            apartmentId: apartment['idApartment'].toString(),
+                            apartmentNumber: apartment['apartmentNumber'] ?? 'N/A',
+                          ),
+                        ),
+                      );
+                      if (added == true) {
+                        Navigator.pop(context, true);
+                      }
+                    },
+                    backgroundColor: Colors.green,
+                  ),
                 ],
               ],
             ),
@@ -173,6 +198,10 @@ class _Building3DViewScreenState extends State<Building3DViewScreen> {
         },
       ),
     );
+
+    if (result == true) {
+      Navigator.pop(context, true);
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {

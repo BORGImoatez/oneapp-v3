@@ -240,8 +240,8 @@ class _AdminBuildingScreenState extends State<AdminBuildingScreen> {
           title: 'Vue 3D de l\'immeuble',
           subtitle: 'Visualiser l\'occupation',
           color: Colors.teal,
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => Building3DViewScreen(
@@ -251,6 +251,9 @@ class _AdminBuildingScreenState extends State<AdminBuildingScreen> {
                 ),
               ),
             );
+            if (result == true) {
+              _loadBuildingData();
+            }
           },
         ),
       ],
