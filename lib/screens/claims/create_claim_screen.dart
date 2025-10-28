@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../models/apartment_details_model.dart';
 import '../../models/claim_model.dart';
 import '../../providers/claim_provider.dart';
 import '../../services/apartment_details_service.dart';
@@ -32,7 +31,7 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
   List<String> _selectedClaimTypes = [];
   List<int> _selectedAffectedApartments = [];
   List<File> _selectedPhotos = [];
-  List<ApartmentDto> _buildingApartments = [];
+  List<SimpleApartment> _buildingApartments = [];
   bool _isLoadingApartments = true;
   int? _userApartmentId;
 

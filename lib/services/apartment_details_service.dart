@@ -162,4 +162,59 @@ class ApartmentDetailsService {
       throw Exception('Error reordering photos: $e');
     }
   }
+
+  Future<List<SimpleApartment>> getApartmentsByBuilding(int buildingId) async {
+    try {
+      final token = await _getToken();
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/apartments/building/$buildingId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        final List<dynamic> apartments = data['content'] ?? [];
+        return apartments.map((apt) => SimpleApartment.fromJson(apt)).toList();
+      } else {
+        throw Exception('Failed to load apartments');
+      }
+    } catch (e) {
+      throw Exception('Error loading apartments: $e');
+    }
+  }
+
+  Future<SimpleApartment?> getCurrentUserApartment(int buildingId) async {
+    try {
+      final apartments = await getApartmentsByBuilding(buildingId);
+      if (apartments.isNotEmpty) {
+        return apartments.first;
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error getting user apartment: $e');
+    }
+  }
+}
+
+class SimpleApartment {
+  final int id;
+  final String apartmentNumber;
+  final int? floor;
+
+  SimpleApartment({
+    required this.id,
+    required this.apartmentNumber,
+    this.floor,
+  });
+
+  factory SimpleApartment.fromJson(Map<String, dynamic> json) {
+    return SimpleApartment(
+      id: json['id'],
+      apartmentNumber: json['apartmentNumber'] ?? '',
+      floor: json['floor'],
+    );
+  }
 }
