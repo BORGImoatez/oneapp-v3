@@ -140,7 +140,7 @@ class ChatProvider with ChangeNotifier {
     final senderId = currentUser?.email ?? 'unknown';
     print('DEBUG: Sending message from user email: $senderId');
 
-    final tempId = DateTime.now().millisecondsSinceEpoch;
+    final tempId = -DateTime.now().millisecondsSinceEpoch;
 
     final tempMessage = Message(
       id: tempId,
@@ -165,19 +165,9 @@ class ChatProvider with ChangeNotifier {
 
     try {
       _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
-
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final updatedMessages = _channelMessages[channelId] ?? [];
-      final tempMessageIndex = updatedMessages.indexWhere((m) => m.id == tempId);
-      if (tempMessageIndex != -1) {
-        updatedMessages[tempMessageIndex] = tempMessage.copyWith(
-          status: MessageStatus.sent,
-        );
-        _channelMessages[channelId] = updatedMessages;
-        notifyListeners();
-      }
+      print('DEBUG: Message sent via WebSocket, waiting for server confirmation');
     } catch (e) {
+      print('DEBUG: Error sending message: $e');
       final updatedMessages = _channelMessages[channelId] ?? [];
       final tempMessageIndex = updatedMessages.indexWhere((m) => m.id == tempId);
       if (tempMessageIndex != -1) {
@@ -284,15 +274,15 @@ class ChatProvider with ChangeNotifier {
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
     final tempMessageIndex = channelMessages.indexWhere(
-      (m) => m.status == MessageStatus.sending &&
+      (m) => m.id < 0 &&
              m.senderId == message.senderId &&
              m.content == message.content &&
              m.type == message.type
     );
 
     if (tempMessageIndex != -1) {
+      print('DEBUG: Found temporary message at index $tempMessageIndex, replacing with real message ID: ${message.id}');
       channelMessages.removeAt(tempMessageIndex);
-      print('DEBUG: Removed temporary message, replacing with real message');
     }
 
     if (!channelMessages.any((m) => m.id == message.id)) {
