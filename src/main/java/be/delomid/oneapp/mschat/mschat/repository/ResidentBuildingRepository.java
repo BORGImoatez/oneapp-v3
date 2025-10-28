@@ -1,5 +1,6 @@
 package be.delomid.oneapp.mschat.mschat.repository;
 
+import be.delomid.oneapp.mschat.mschat.model.MemberRole;
 import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
 import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,8 +20,8 @@ public interface ResidentBuildingRepository extends JpaRepository<ResidentBuildi
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.resident.email = :email AND rb.isActive = true")
     List<ResidentBuilding> findActiveByResidentEmail(@Param("email") String email);
 
-    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.resident.idUsers = :residentId AND rb.building.buildingId = :buildingId AND rb.isActive = true")
-    Optional<ResidentBuilding> findByResidentIdAndBuildingId(@Param("residentId") String residentId, @Param("buildingId") String buildingId);
+    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.resident.id = :residentId AND rb.building.id = :buildingId AND rb.isActive = true")
+    List<ResidentBuilding> findByResidentIdAndBuildingId(@Param("residentId") Long residentId, @Param("buildingId") Long buildingId);
 
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.resident.email = :email AND rb.building.buildingId = :buildingId AND rb.isActive = true")
     Optional<ResidentBuilding> findByResidentEmailAndBuildingId(@Param("email") String email, @Param("buildingId") String buildingId);
@@ -28,8 +29,11 @@ public interface ResidentBuildingRepository extends JpaRepository<ResidentBuildi
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.buildingId = :buildingId AND rb.isActive = true")
     List<ResidentBuilding> findActiveByBuildingId(@Param("buildingId") String buildingId);
 
-    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.buildingId = :buildingId AND rb.roleInBuilding = :role AND rb.isActive = true")
-    List<ResidentBuilding> findByBuildingIdAndRole(@Param("buildingId") String buildingId, @Param("role") UserRole role);
+    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.id = :buildingId AND rb.role = :role AND rb.isActive = true")
+    List<ResidentBuilding> findByBuildingIdAndRole(@Param("buildingId") Long buildingId, @Param("role") MemberRole role);
+
+    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.id = :buildingId AND rb.apartment.id = :apartmentId AND rb.isActive = true")
+    List<ResidentBuilding> findByBuildingIdAndApartmentId(@Param("buildingId") Long buildingId, @Param("apartmentId") Long apartmentId);
 
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.buildingId = :buildingId AND rb.isActive = true")
     List<ResidentBuilding> findByBuildingId(@Param("buildingId") String buildingId);

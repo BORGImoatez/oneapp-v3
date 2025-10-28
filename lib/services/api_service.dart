@@ -403,6 +403,39 @@ class ApiService {
       );
     }
   }
+
+  Future<dynamic> patch(String endpoint, Map<String, dynamic> data) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await _getHeaders(),
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      throw ApiException(
+        message: 'Error: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    }
+  }
+
+  Future<void> delete(String endpoint) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    } else {
+      throw ApiException(
+        message: 'Error: ${response.statusCode}',
+        statusCode: response.statusCode,
+      );
+    }
+  }
 }
 
 class ApiException implements Exception {
