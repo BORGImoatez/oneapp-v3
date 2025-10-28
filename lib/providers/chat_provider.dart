@@ -136,16 +136,57 @@ class ChatProvider with ChangeNotifier {
   }
 
   Future<void> _sendMessageInternal(int channelId, String content, String type, {int? replyToId}) async {
-    // Récupérer l'ID de l'utilisateur actuel
     final currentUser = StorageService.getUser();
-    // Utiliser l'email comme senderId pour être cohérent avec le backend
     final senderId = currentUser?.email ?? 'unknown';
-    print('DEBUG: Sending message from user email: $senderId'); // Debug log
+    print('DEBUG: Sending message from user email: $senderId');
+
+    final tempId = DateTime.now().millisecondsSinceEpoch;
+
+    final tempMessage = Message(
+      id: tempId,
+      channelId: channelId,
+      senderId: senderId,
+      senderFname: currentUser?.firstName ?? '',
+      senderLname: currentUser?.lastName ?? '',
+      senderPicture: currentUser?.profilePicture,
+      content: content,
+      type: type,
+      replyToId: replyToId,
+      isEdited: false,
+      isDeleted: false,
+      createdAt: DateTime.now(),
+      status: MessageStatus.sending,
+    );
+
+    final channelMessages = _channelMessages[channelId] ?? [];
+    channelMessages.insert(0, tempMessage);
+    _channelMessages[channelId] = channelMessages;
+    notifyListeners();
 
     try {
-      // Envoyer uniquement via WebSocket - le message sera reçu via WebSocket
       _wsService.sendMessage(channelId, content, type, replyToId: replyToId);
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final updatedMessages = _channelMessages[channelId] ?? [];
+      final tempMessageIndex = updatedMessages.indexWhere((m) => m.id == tempId);
+      if (tempMessageIndex != -1) {
+        updatedMessages[tempMessageIndex] = tempMessage.copyWith(
+          status: MessageStatus.sent,
+        );
+        _channelMessages[channelId] = updatedMessages;
+        notifyListeners();
+      }
     } catch (e) {
+      final updatedMessages = _channelMessages[channelId] ?? [];
+      final tempMessageIndex = updatedMessages.indexWhere((m) => m.id == tempId);
+      if (tempMessageIndex != -1) {
+        updatedMessages[tempMessageIndex] = tempMessage.copyWith(
+          status: MessageStatus.failed,
+        );
+        _channelMessages[channelId] = updatedMessages;
+        notifyListeners();
+      }
       _setError(e.toString());
     }
   }
@@ -221,24 +262,20 @@ class ChatProvider with ChangeNotifier {
   }
 
   void _handleNewMessage(Message message) {
-    // Vérifier le contexte du bâtiment
     final currentBuildingId = BuildingContextService().currentBuildingId;
     if (_currentBuildingContext != currentBuildingId) {
       print('DEBUG: Ignoring message - building context mismatch');
       return;
     }
 
-    // Vérifier que le message appartient au bâtiment actuel
-    // Cette vérification sera faite côté serveur, mais on peut ajouter une sécurité côté client
     if (currentBuildingId == null) {
       print('DEBUG: No building context, ignoring message');
       return;
     }
 
     final currentUser = StorageService.getUser();
-    print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}'); // Debug log
+    print('DEBUG: Received message from: ${message.senderId}, current user ID: ${currentUser?.id}, current user email: ${currentUser?.email}');
 
-    // Vérifier que le message appartient à un canal de l'utilisateur actuel
     if (!_channelMessages.containsKey(message.channelId)) {
       print('DEBUG: Ignoring message for channel ${message.channelId} - not in current building context');
       return;
@@ -246,12 +283,23 @@ class ChatProvider with ChangeNotifier {
 
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
-    // Ajouter le nouveau message s'il n'existe pas déjà
+    final tempMessageIndex = channelMessages.indexWhere(
+      (m) => m.status == MessageStatus.sending &&
+             m.senderId == message.senderId &&
+             m.content == message.content &&
+             m.type == message.type
+    );
+
+    if (tempMessageIndex != -1) {
+      channelMessages.removeAt(tempMessageIndex);
+      print('DEBUG: Removed temporary message, replacing with real message');
+    }
+
     if (!channelMessages.any((m) => m.id == message.id)) {
       channelMessages.insert(0, message);
-      print('DEBUG: Added new message with ID: ${message.id}'); // Debug log
+      print('DEBUG: Added new message with ID: ${message.id}');
     } else {
-      print('DEBUG: Message with ID ${message.id} already exists, skipping'); // Debug log
+      print('DEBUG: Message with ID ${message.id} already exists, skipping');
     }
 
     _channelMessages[message.channelId] = channelMessages;

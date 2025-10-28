@@ -106,11 +106,7 @@ class MessageBubble extends StatelessWidget {
                       ],
                       if (isMe) ...[
                         const SizedBox(width: 4),
-                        const Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
+                        _buildMessageStatusIndicator(),
                       ],
                     ],
                   ),
@@ -122,6 +118,40 @@ class MessageBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildMessageStatusIndicator() {
+    if (message.status == null) {
+      return const Icon(
+        Icons.done_all,
+        size: 14,
+        color: Colors.white70,
+      );
+    }
+
+    switch (message.status!) {
+      case MessageStatus.sending:
+        return const SizedBox(
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+          ),
+        );
+      case MessageStatus.sent:
+        return const Icon(
+          Icons.done_all,
+          size: 14,
+          color: Colors.white70,
+        );
+      case MessageStatus.failed:
+        return const Icon(
+          Icons.error_outline,
+          size: 14,
+          color: Colors.red,
+        );
+    }
   }
 
   Widget _buildMessageContent(BuildContext context) {

@@ -66,6 +66,12 @@ class FileAttachment {
   }
 }
 
+enum MessageStatus {
+  sending,
+  sent,
+  failed,
+}
+
 class Message {
   final int id;
   final int channelId;
@@ -81,6 +87,7 @@ class Message {
   final bool isDeleted;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final MessageStatus? status;
 
   Message({
     required this.id,
@@ -97,6 +104,7 @@ class Message {
     required this.isDeleted,
     required this.createdAt,
     this.updatedAt,
+    this.status,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -117,6 +125,7 @@ class Message {
       isDeleted: json['isDeleted'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      status: MessageStatus.sent,
     );
   }
 
@@ -137,5 +146,41 @@ class Message {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
+  }
+
+  Message copyWith({
+    int? id,
+    int? channelId,
+    String? senderId,
+    String? senderFname,
+    String? senderLname,
+    String? senderPicture,
+    String? content,
+    String? type,
+    int? replyToId,
+    FileAttachment? fileAttachment,
+    bool? isEdited,
+    bool? isDeleted,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    MessageStatus? status,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      channelId: channelId ?? this.channelId,
+      senderId: senderId ?? this.senderId,
+      senderFname: senderFname ?? this.senderFname,
+      senderLname: senderLname ?? this.senderLname,
+      senderPicture: senderPicture ?? this.senderPicture,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      replyToId: replyToId ?? this.replyToId,
+      fileAttachment: fileAttachment ?? this.fileAttachment,
+      isEdited: isEdited ?? this.isEdited,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
+    );
   }
 }
