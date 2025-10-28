@@ -141,10 +141,19 @@ class NotificationService {
   }
 
   void _handleNotificationTap(RemoteMessage message) {
-    if (message.data['type'] == 'CHANNEL_CREATED') {
+    final notificationType = message.data['type'];
+
+    if (notificationType == 'CHANNEL_CREATED') {
       String? channelId = message.data['channelId'];
       if (channelId != null) {
         print('Navigate to channel: $channelId');
+      }
+    } else if (notificationType == 'CLAIM_NEW' ||
+        notificationType == 'CLAIM_AFFECTED' ||
+        notificationType == 'CLAIM_STATUS_UPDATE') {
+      String? claimId = message.data['relatedId'];
+      if (claimId != null) {
+        print('Navigate to claim: $claimId');
       }
     }
   }

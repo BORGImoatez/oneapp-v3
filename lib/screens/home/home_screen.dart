@@ -15,6 +15,7 @@ import '../chat/chat_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../admin/admin_building_screen.dart';
 import '../apartment/my_apartment_screen.dart';
+import '../claims/claims_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -403,6 +404,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
+                  );
+                },
+              ),
+              QuickAccessCard(
+                title: 'Sinistres',
+                subtitle: 'Déclarer un sinistre',
+                icon: Icons.warning_amber_rounded,
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ClaimsScreen(),
+                    ),
                   );
                 },
               ),
