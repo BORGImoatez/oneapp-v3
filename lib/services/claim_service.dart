@@ -2,12 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/claim_model.dart';
-import 'api_service.dart';
+import '../utils/constants.dart';
 import 'storage_service.dart';
 
 class ClaimService {
-  final ApiService _apiService = ApiService();
-  final StorageService _storageService = StorageService();
+  Future<String?> _getToken() async {
+    return await StorageService.getToken();
+  }
+
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await _getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<ClaimModel> createClaim({
     required int apartmentId,
@@ -20,7 +29,7 @@ class ClaimService {
     List<File>? photos,
   }) async {
     try {
-      final token = await _storageService.getToken();
+      final token = await _getToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
@@ -35,7 +44,7 @@ class ClaimService {
         'affectedApartmentIds': affectedApartmentIds ?? [],
       };
 
-      final uri = Uri.parse('${_apiService.baseUrl}/api/claims');
+      final uri = Uri.parse('${Constants.baseUrl}/api/claims');
       var request = http.MultipartRequest('POST', uri);
 
       request.headers['Authorization'] = 'Bearer $token';
@@ -43,15 +52,9 @@ class ClaimService {
 
       if (photos != null && photos.isNotEmpty) {
         for (var photo in photos) {
-          var stream = http.ByteStream(photo.openRead());
-          var length = await photo.length();
-          var multipartFile = http.MultipartFile(
-            'photos',
-            stream,
-            length,
-            filename: photo.path.split('/').last,
+          request.files.add(
+            await http.MultipartFile.fromPath('photos', photo.path),
           );
-          request.files.add(multipartFile);
         }
       }
 
@@ -62,7 +65,8 @@ class ClaimService {
         final data = jsonDecode(response.body);
         return ClaimModel.fromJson(data);
       } else {
-        throw Exception('Failed to create claim: ${response.statusCode}');
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? 'Failed to create claim');
       }
     } catch (e) {
       throw Exception('Error creating claim: $e');
@@ -71,9 +75,18 @@ class ClaimService {
 
   Future<List<ClaimModel>> getClaimsByBuilding(int buildingId) async {
     try {
-      final response = await _apiService.get('/api/claims/building/$buildingId');
-      final List<dynamic> data = response;
-      return data.map((json) => ClaimModel.fromJson(json)).toList();
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/api/claims/building/$buildingId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => ClaimModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load claims');
+      }
     } catch (e) {
       throw Exception('Error fetching claims: $e');
     }
@@ -81,8 +94,18 @@ class ClaimService {
 
   Future<ClaimModel> getClaimById(int claimId) async {
     try {
-      final response = await _apiService.get('/api/claims/$claimId');
-      return ClaimModel.fromJson(response);
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/api/claims/$claimId'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ClaimModel.fromJson(data);
+      } else {
+        throw Exception('Failed to load claim');
+      }
     } catch (e) {
       throw Exception('Error fetching claim: $e');
     }
@@ -90,11 +113,19 @@ class ClaimService {
 
   Future<ClaimModel> updateClaimStatus(int claimId, String status) async {
     try {
-      final response = await _apiService.patch(
-        '/api/claims/$claimId/status',
-        {'status': status},
+      final headers = await _getHeaders();
+      final response = await http.patch(
+        Uri.parse('${Constants.baseUrl}/api/claims/$claimId/status'),
+        headers: headers,
+        body: jsonEncode({'status': status}),
       );
-      return ClaimModel.fromJson(response);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return ClaimModel.fromJson(data);
+      } else {
+        throw Exception('Failed to update claim status');
+      }
     } catch (e) {
       throw Exception('Error updating claim status: $e');
     }
@@ -102,7 +133,15 @@ class ClaimService {
 
   Future<void> deleteClaim(int claimId) async {
     try {
-      await _apiService.delete('/api/claims/$claimId');
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('${Constants.baseUrl}/api/claims/$claimId'),
+        headers: headers,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete claim');
+      }
     } catch (e) {
       throw Exception('Error deleting claim: $e');
     }
