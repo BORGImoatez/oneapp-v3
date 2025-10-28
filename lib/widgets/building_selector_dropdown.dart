@@ -46,7 +46,7 @@ class BuildingSelectorDropdown extends StatelessWidget {
                   const Icon(Icons.apartment, color: AppTheme.primaryColor),
                   const SizedBox(width: 12),
                   const Text(
-                    'Mes biens',
+                    'Immeubles',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -210,7 +210,7 @@ class BuildingSelectorDropdown extends StatelessWidget {
     return IconButton(
       onPressed: () => _showBuildingsList(context),
       icon: const Icon(Icons.list_alt),
-      tooltip: 'Mes biens',
+      tooltip: 'Immeubles',
     );
   }
 }

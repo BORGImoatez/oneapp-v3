@@ -29,7 +29,6 @@ dependencies:
   socket_io_client: ^2.0.3+1
   web_socket_channel: ^2.4.0
   stomp_dart_client: ^1.0.0
-  flutter_webrtc: ^0.9.39
 
   # Storage
   shared_preferences: ^2.2.2

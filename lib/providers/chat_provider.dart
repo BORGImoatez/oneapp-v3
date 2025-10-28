@@ -1,4 +1,76 @@
-kipping messages load');
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import '../models/message_model.dart';
+import '../models/user_model.dart';
+import '../services/api_service.dart';
+import '../services/websocket_service.dart';
+import '../services/storage_service.dart';
+import '../services/building_context_service.dart';
+
+class ChatProvider with ChangeNotifier {
+  final ApiService _apiService = ApiService();
+  final WebSocketService _wsService = WebSocketService();
+
+  final Map<int, List<Message>> _channelMessages = {};
+  final Map<int, bool> _isLoadingMessages = {};
+  final Map<String, bool> _typingUsers = {};
+  String? _currentBuildingContext;
+
+  bool _isLoading = false;
+  String? _error;
+
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  ChatProvider() {
+    _wsService.onMessageReceived = _handleNewMessage;
+    _wsService.onTypingReceived = _handleTypingIndicator;
+  }
+
+  List<Message> getChannelMessages(int channelId) {
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId) {
+      print('DEBUG: Building context changed, clearing messages data');
+      _channelMessages.clear();
+      _isLoadingMessages.clear();
+      _typingUsers.clear();
+      _currentBuildingContext = currentBuildingId;
+      notifyListeners();
+      return [];
+    }
+
+    return _channelMessages[channelId] ?? [];
+  }
+
+  bool isLoadingMessages(int channelId) {
+    return _isLoadingMessages[channelId] ?? false;
+  }
+
+  List<String> getTypingUsers(int channelId) {
+    return _typingUsers.entries
+        .where((entry) => entry.key.startsWith('$channelId:') && entry.value)
+        .map((entry) => entry.key.split(':')[1])
+        .toList();
+  }
+
+  Future<void> loadChannelMessages(int channelId, {bool refresh = false}) async {
+    if (_isLoadingMessages[channelId] == true) return;
+
+    // Vérifier le contexte du bâtiment
+    final currentBuildingId = BuildingContextService().currentBuildingId;
+    if (_currentBuildingContext != currentBuildingId || refresh) {
+      print('DEBUG: Building context changed, clearing messages before loading');
+      _channelMessages.clear();
+      _isLoadingMessages.clear();
+      _typingUsers.clear();
+      _currentBuildingContext = currentBuildingId;
+    }
+
+    // Ne pas charger si pas de contexte de bâtiment
+    if (currentBuildingId == null) {
+      print('DEBUG: No building context, skipping messages load');
       return;
     }
 
@@ -74,9 +146,9 @@ kipping messages load');
       id: tempId,
       channelId: channelId,
       senderId: senderId,
-      senderFname: currentUser?.firstName ?? '',
-      senderLname: currentUser?.lastName ?? '',
-      senderPicture: currentUser?.profilePicture,
+      senderFname: currentUser?.fname ?? '',
+      senderLname: currentUser?.lname ?? '',
+      senderPicture: currentUser?.picture,
       content: content,
       type: type,
       replyToId: replyToId,
@@ -202,34 +274,26 @@ kipping messages load');
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
     final tempMessageIndex = channelMessages.indexWhere(
-      (m) => m.id < 0 &&
-             m.senderId == message.senderId &&
-             m.content == message.content &&
-             m.type == message.type
+            (m) => m.id < 0 &&
+            m.senderId == message.senderId &&
+            m.content == message.content &&
+            m.type == message.type
     );
 
     if (tempMessageIndex != -1) {
-      print('DEBUG: Found temporary message at index $tempMessageIndex, updating status to sent with real ID: ${message.id}');
-      final tempMessage = channelMessages[tempMessageIndex];
-      channelMessages[tempMessageIndex] = tempMessage.copyWith(
-        id: message.id,
-        status: MessageStatus.sent,
-        createdAt: message.createdAt,
-      );
-      print('DEBUG: Updated temporary message to sent status');
-      _channelMessages[message.channelId] = channelMessages;
-      notifyListeners();
-      return;
+      print('DEBUG: Found temporary message at index $tempMessageIndex, replacing with real message ID: ${message.id}');
+      channelMessages.removeAt(tempMessageIndex);
     }
 
     if (!channelMessages.any((m) => m.id == message.id)) {
       channelMessages.insert(0, message);
       print('DEBUG: Added new message with ID: ${message.id}');
-      _channelMessages[message.channelId] = channelMessages;
-      notifyListeners();
     } else {
       print('DEBUG: Message with ID ${message.id} already exists, skipping');
     }
+
+    _channelMessages[message.channelId] = channelMessages;
+    notifyListeners();
   }
 
   void _handleTypingIndicator(String userId, String channelId, bool isTyping) {
