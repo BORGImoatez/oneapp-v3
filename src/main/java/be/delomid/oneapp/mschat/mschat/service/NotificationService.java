@@ -106,11 +106,58 @@ public class NotificationService {
         notificationRepository.markAllAsReadForResident(residentId);
     }
 
+    @Transactional
+    public void sendNotification(NotificationDto notificationDto) {
+        Resident resident = residentRepository.findById(notificationDto.getResidentId())
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+
+        Building building = null;
+        if (notificationDto.getBuildingId() != null) {
+            building = buildingRepository.findById(notificationDto.getBuildingId())
+                    .orElse(null);
+        }
+
+        Channel channel = null;
+        if (notificationDto.getChannelId() != null) {
+            channel = channelRepository.findById(notificationDto.getChannelId()).orElse(null);
+        }
+
+        Notification notification = Notification.builder()
+                .resident(resident)
+                .building(building)
+                .title(notificationDto.getTitle())
+                .body(notificationDto.getBody())
+                .type(notificationDto.getType())
+                .channel(channel)
+                .voteId(notificationDto.getVoteId())
+                .documentId(notificationDto.getDocumentId())
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
+
+        if (resident.getFcmToken() != null && !resident.getFcmToken().isEmpty()) {
+            try {
+                fcmService.sendPushNotification(
+                    resident.getFcmToken(),
+                    notificationDto.getTitle(),
+                    notificationDto.getBody(),
+                    notificationDto.getType(),
+                    notificationDto.getRelatedId() != null ? notificationDto.getRelatedId().toString() : null
+                );
+                log.info("Push notification sent to resident: {}", notificationDto.getResidentId());
+            } catch (Exception e) {
+                log.error("Error sending push notification to resident {}: {}", notificationDto.getResidentId(), e.getMessage());
+            }
+        }
+    }
+
     private NotificationDto toDto(Notification notification) {
         return NotificationDto.builder()
                 .id(notification.getId())
-                .residentId(notification.getResident().getIdUsers())
-                .buildingId(notification.getBuilding().getBuildingId())
+                .residentId(notification.getResident().getId())
+                .buildingId(notification.getBuilding() != null ? notification.getBuilding().getBuildingId() : null)
                 .title(notification.getTitle())
                 .body(notification.getBody())
                 .type(notification.getType())

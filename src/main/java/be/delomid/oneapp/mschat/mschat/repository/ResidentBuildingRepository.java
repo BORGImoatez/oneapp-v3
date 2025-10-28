@@ -1,6 +1,5 @@
 package be.delomid.oneapp.mschat.mschat.repository;
 
-import be.delomid.oneapp.mschat.mschat.model.MemberRole;
 import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
 import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,8 +28,8 @@ public interface ResidentBuildingRepository extends JpaRepository<ResidentBuildi
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.buildingId = :buildingId AND rb.isActive = true")
     List<ResidentBuilding> findActiveByBuildingId(@Param("buildingId") String buildingId);
 
-    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.id = :buildingId AND rb.role = :role AND rb.isActive = true")
-    List<ResidentBuilding> findByBuildingIdAndRole(@Param("buildingId") Long buildingId, @Param("role") MemberRole role);
+    @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.id = :buildingId AND rb.roleInBuilding = :role AND rb.isActive = true")
+    List<ResidentBuilding> findByBuildingIdAndRole(@Param("buildingId") Long buildingId, @Param("role") UserRole role);
 
     @Query("SELECT rb FROM ResidentBuilding rb WHERE rb.building.id = :buildingId AND rb.apartment.id = :apartmentId AND rb.isActive = true")
     List<ResidentBuilding> findByBuildingIdAndApartmentId(@Param("buildingId") Long buildingId, @Param("apartmentId") Long apartmentId);

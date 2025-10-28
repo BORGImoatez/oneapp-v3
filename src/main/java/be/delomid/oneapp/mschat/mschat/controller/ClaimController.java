@@ -3,8 +3,8 @@ package be.delomid.oneapp.mschat.mschat.controller;
 import be.delomid.oneapp.mschat.mschat.dto.ClaimDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateClaimRequest;
 import be.delomid.oneapp.mschat.mschat.dto.UpdateClaimStatusRequest;
-import be.delomid.oneapp.mschat.mschat.model.MemberRole;
 import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
+import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import be.delomid.oneapp.mschat.mschat.service.ClaimService;
 import be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil;
@@ -54,7 +54,7 @@ public class ClaimController {
                     .findByResidentIdAndBuildingId(residentId, buildingId);
 
             boolean isAdmin = residentBuildings.stream()
-                    .anyMatch(rb -> rb.getRole() == MemberRole.ADMIN);
+                    .anyMatch(rb -> rb.getRoleInBuilding() == UserRole.ADMIN);
 
             List<ClaimDto> claims = claimService.getClaimsByBuilding(buildingId, residentId, isAdmin);
             return ResponseEntity.ok(claims);

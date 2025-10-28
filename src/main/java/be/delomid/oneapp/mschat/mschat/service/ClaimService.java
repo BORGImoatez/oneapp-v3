@@ -116,16 +116,18 @@ public class ClaimService {
     private void sendClaimNotifications(Claim claim) {
         // Get all admins of the building
         List<ResidentBuilding> admins = residentBuildingRepository
-                .findByBuildingIdAndRole(claim.getBuilding().getId(), MemberRole.ADMIN);
+                .findByBuildingIdAndRole(claim.getBuilding().getId(), UserRole.ADMIN);
 
         for (ResidentBuilding admin : admins) {
-            NotificationDto notification = new NotificationDto();
-            notification.setResidentId(admin.getResident().getId());
-            notification.setTitle("Nouveau sinistre déclaré");
-            notification.setBody(String.format("Un sinistre a été déclaré pour l'appartement %s",
-                    claim.getApartment().getApartmentNumber()));
-            notification.setType("CLAIM_NEW");
-            notification.setRelatedId(claim.getId());
+            NotificationDto notification = NotificationDto.builder()
+                    .residentId(admin.getResident().getId())
+                    .buildingId(claim.getBuilding().getBuildingId())
+                    .title("Nouveau sinistre déclaré")
+                    .body(String.format("Un sinistre a été déclaré pour l'appartement %s",
+                            claim.getApartment().getApartmentNumber()))
+                    .type("CLAIM_NEW")
+                    .relatedId(claim.getId())
+                    .build();
             notificationService.sendNotification(notification);
         }
 
@@ -137,13 +139,15 @@ public class ClaimService {
 
             for (ResidentBuilding resident : residents) {
                 if (!resident.getResident().getId().equals(claim.getReporter().getId())) {
-                    NotificationDto notification = new NotificationDto();
-                    notification.setResidentId(resident.getResident().getId());
-                    notification.setTitle("Votre appartement est concerné par un sinistre");
-                    notification.setBody(String.format("Un sinistre déclaré par l'appartement %s concerne votre logement",
-                            claim.getApartment().getApartmentNumber()));
-                    notification.setType("CLAIM_AFFECTED");
-                    notification.setRelatedId(claim.getId());
+                    NotificationDto notification = NotificationDto.builder()
+                            .residentId(resident.getResident().getId())
+                            .buildingId(claim.getBuilding().getBuildingId())
+                            .title("Votre appartement est concerné par un sinistre")
+                            .body(String.format("Un sinistre déclaré par l'appartement %s concerne votre logement",
+                                    claim.getApartment().getApartmentNumber()))
+                            .type("CLAIM_AFFECTED")
+                            .relatedId(claim.getId())
+                            .build();
                     notificationService.sendNotification(notification);
                 }
             }
@@ -179,12 +183,14 @@ public class ClaimService {
         claim = claimRepository.save(claim);
 
         // Send notification to reporter
-        NotificationDto notification = new NotificationDto();
-        notification.setResidentId(claim.getReporter().getId());
-        notification.setTitle("Mise à jour du statut de votre sinistre");
-        notification.setBody(String.format("Le statut de votre sinistre a été mis à jour: %s", status));
-        notification.setType("CLAIM_STATUS_UPDATE");
-        notification.setRelatedId(claim.getId());
+        NotificationDto notification = NotificationDto.builder()
+                .residentId(claim.getReporter().getId())
+                .buildingId(claim.getBuilding().getBuildingId())
+                .title("Mise à jour du statut de votre sinistre")
+                .body(String.format("Le statut de votre sinistre a été mis à jour: %s", status))
+                .type("CLAIM_STATUS_UPDATE")
+                .relatedId(claim.getId())
+                .build();
         notificationService.sendNotification(notification);
 
         return convertToDto(claim);

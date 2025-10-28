@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class NotificationDto {
     private Long id;
-    private String residentId;
+    private Long residentId;
     private String buildingId;
     private String title;
     private String body;
@@ -21,6 +21,7 @@ public class NotificationDto {
     private Long channelId;
     private Long voteId;
     private Long documentId;
+    private Long relatedId;
     private Boolean isRead;
     private LocalDateTime createdAt;
     private LocalDateTime readAt;
