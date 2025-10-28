@@ -167,7 +167,8 @@ public class AdminService {
     @PreAuthorize("hasRole('BUILDING_ADMIN') or hasRole('GROUP_ADMIN') or hasRole('SUPER_ADMIN')")
     @Transactional
     public ResidentDto addResidentToApartment(String adminId, AddResidentToApartmentRequest request) {
-        Resident admin = residentRepository.findById(adminId)
+        log.debug("Adding by admin {}",adminId);
+        Resident admin = residentRepository.findByEmail(adminId)
                 .orElseThrow(() -> new IllegalArgumentException("Admin not found"));
 
         if (admin.getRole() == UserRole.RESIDENT) {
@@ -176,7 +177,6 @@ public class AdminService {
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Apartment not found"));
-
         Building building = apartment.getBuilding();
 
         if (admin.getRole() == UserRole.BUILDING_ADMIN &&
@@ -203,7 +203,8 @@ public class AdminService {
                 .build();
 
         resident = residentRepository.save(resident);
-
+        apartment.setResident(resident);
+        apartment=apartmentRepository.save(apartment);
         ResidentBuilding residentBuilding = ResidentBuilding.builder()
                 .resident(resident)
                 .building(building)
@@ -217,8 +218,8 @@ public class AdminService {
         emailService.sendWelcomeEmail(
                 resident.getEmail(),
                 resident.getFname() + " " + resident.getLname(),
-                building.getName(),
-                apartment.getNumber(),
+                building.getBuildingLabel(),
+                apartment.getApartmentNumber(),
                 resident.getEmail(),
                 temporaryPassword
         );

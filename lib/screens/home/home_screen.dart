@@ -50,15 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Vérifier si le bâtiment a changé
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
 
-
     if (_lastBuildingId != currentBuildingId) {
-      print('DEBUG: HomeScreen - Building changed from $_lastBuildingId to $currentBuildingId');
       _lastBuildingId = currentBuildingId;
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentBuildingId != null) {
           _initializeForCurrentBuilding();
@@ -67,22 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   void _initializeForCurrentBuilding() {
-    print('DEBUG: HomeScreen - Initializing for current building');
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
 
     if (currentBuildingId != null) {
-      // Nettoyer et charger les données pour le bâtiment actuel
       BuildingContextService.clearAllProvidersData(context);
 
-      // Attendre un peu puis charger
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) {
           BuildingContextService.forceRefreshForBuilding(context, currentBuildingId);
-
           final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
           notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
         }
@@ -90,24 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _loadData() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentBuildingId = authProvider.user?.buildingId;
-
-    if (currentBuildingId == null) {
-      print('DEBUG: No building context, skipping data load');
-      return;
-    }
-
-    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
-    channelProvider.loadChannels(refresh: true);
-
-    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-    notificationProvider.loadUnreadCountForBuilding(currentBuildingId);
-  }
-
   void _refreshHomeData() {
-    print('DEBUG: HomeScreen - Refreshing home data after notification');
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentBuildingId = authProvider.user?.buildingId;
 
@@ -124,40 +97,66 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<bool> _onWillPop() async {
+    // ✅ Popup de confirmation avant de quitter
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Quitter l'application ?",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("Êtes-vous sûr de vouloir quitter ?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              "Non",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Oui"),
+          ),
+        ],
+      ),
+    );
+    return shouldExit ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            _initializeForCurrentBuilding();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                _buildHeader(),
-
-                const SizedBox(height: 24),
-
-                // Notifications Summary
-                _buildNotificationsSummary(),
-
-                const SizedBox(height: 24),
-
-                // Quick Access
-                _buildQuickAccess(),
-
-                const SizedBox(height: 24),
-
-                // Recent Activity
-                _buildRecentActivity(),
-              ],
+    return WillPopScope(
+      onWillPop: _onWillPop, // 🔒 Intercepte le bouton retour physique
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _initializeForCurrentBuilding();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildNotificationsSummary(),
+                  const SizedBox(height: 24),
+                  _buildQuickAccess(),
+                  const SizedBox(height: 24),
+                  _buildRecentActivity(),
+                ],
+              ),
             ),
           ),
         ),
@@ -300,13 +299,11 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icons.notifications,
           color: AppTheme.warningColor,
           onTap: () {
-            // TODO: Navigate to notifications screen
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const NotificationsScreen(),
               ),
             );
-
           },
         );
       },
@@ -330,9 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, channelProvider, authProvider, child) {
             final recentChannels = channelProvider.channels.take(2).toList();
             final screenWidth = MediaQuery.of(context).size.width;
-            final isAdmin = authProvider.user?.role=='BUILDING_ADMIN';
-
-
+            final isAdmin = authProvider.user?.role == 'BUILDING_ADMIN';
 
             final quickAccessItems = <Widget>[
               if (authProvider.user?.apartmentId != null)
@@ -345,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => MyApartmentScreen(
-                          apartmentId: authProvider.user!.apartmentId!, // force non-null
+                          apartmentId: authProvider.user!.apartmentId!,
                         ),
                       ),
                     );
@@ -510,9 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     title: Text(
                       channel.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
                       channel.lastMessage?.content ?? 'Aucun message',

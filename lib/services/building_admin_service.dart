@@ -236,6 +236,8 @@ class BuildingAdminService {
           'apartmentId': apartmentId,
         }),
       );
+      print('ahla');
+      print(response.statusCode);
 
       if (response.statusCode == 200) {
         return json.decode(utf8.decode(response.bodyBytes));
@@ -244,7 +246,9 @@ class BuildingAdminService {
         throw Exception(errorBody['message'] ?? 'Failed to add resident');
       }
     } catch (e) {
+
       throw Exception('Error adding resident: $e');
+
     }
   }
 }
