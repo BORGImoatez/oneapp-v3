@@ -273,11 +273,14 @@ class ChatProvider with ChangeNotifier {
 
     final channelMessages = _channelMessages[message.channelId] ?? [];
 
+    // Chercher le message temporaire en utilisant plusieurs critères
     final tempMessageIndex = channelMessages.indexWhere(
             (m) => m.id < 0 &&
-            m.senderId == message.senderId &&
             m.content == message.content &&
-            m.type == message.type
+            m.type == message.type &&
+            (m.senderId == message.senderId ||
+             m.senderId == currentUser?.email ||
+             m.senderId == currentUser?.id)
     );
 
     if (tempMessageIndex != -1) {
@@ -285,6 +288,7 @@ class ChatProvider with ChangeNotifier {
       channelMessages.removeAt(tempMessageIndex);
     }
 
+    // Vérifier si le message existe déjà par son ID
     if (!channelMessages.any((m) => m.id == message.id)) {
       channelMessages.insert(0, message);
       print('DEBUG: Added new message with ID: ${message.id}');
