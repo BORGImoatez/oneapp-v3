@@ -209,19 +209,27 @@ kipping messages load');
     );
 
     if (tempMessageIndex != -1) {
-      print('DEBUG: Found temporary message at index $tempMessageIndex, replacing with real message ID: ${message.id}');
-      channelMessages.removeAt(tempMessageIndex);
+      print('DEBUG: Found temporary message at index $tempMessageIndex, updating status to sent with real ID: ${message.id}');
+      final tempMessage = channelMessages[tempMessageIndex];
+      channelMessages[tempMessageIndex] = tempMessage.copyWith(
+        id: message.id,
+        status: MessageStatus.sent,
+        createdAt: message.createdAt,
+      );
+      print('DEBUG: Updated temporary message to sent status');
+      _channelMessages[message.channelId] = channelMessages;
+      notifyListeners();
+      return;
     }
 
     if (!channelMessages.any((m) => m.id == message.id)) {
       channelMessages.insert(0, message);
       print('DEBUG: Added new message with ID: ${message.id}');
+      _channelMessages[message.channelId] = channelMessages;
+      notifyListeners();
     } else {
       print('DEBUG: Message with ID ${message.id} already exists, skipping');
     }
-
-    _channelMessages[message.channelId] = channelMessages;
-    notifyListeners();
   }
 
   void _handleTypingIndicator(String userId, String channelId, bool isTyping) {
