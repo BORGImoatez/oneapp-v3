@@ -43,7 +43,11 @@ dependencies:
   # Audio
   flutter_sound: ^9.2.13
   audioplayers: ^5.2.1
-  
+
+  # WebRTC & Calling
+  flutter_webrtc: ^0.9.48
+  vibration: ^1.8.4
+
   # Utils
   intl: ^0.18.1
   uuid: ^4.1.0

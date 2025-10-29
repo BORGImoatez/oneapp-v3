@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/call_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../models/channel_model.dart';
@@ -13,6 +14,7 @@ import '../../models/message_model.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../../services/audio_service.dart';
+import '../call/active_call_screen.dart';
 import 'shared_media_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -290,6 +292,59 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // ==================== CALL HANDLING ====================
+
+  Future<void> _initiateCall() async {
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    if (widget.channel.type != 'ONE_TO_ONE') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Les appels ne sont disponibles que pour les discussions privées'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      String? receiverId;
+      for (var member in widget.channel.members) {
+        if (member.userId != authProvider.user?.idUsers) {
+          receiverId = member.userId;
+          break;
+        }
+      }
+
+      if (receiverId == null) {
+        throw Exception('Impossible de trouver le destinataire');
+      }
+
+      await callProvider.initiateCall(
+        channelId: widget.channel.id,
+        receiverId: receiverId,
+      );
+
+      if (mounted && callProvider.currentCall != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ActiveCallScreen(
+              call: callProvider.currentCall!,
+              webrtcService: callProvider.webrtcService,
+              isOutgoing: true,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'appel: $e')),
+        );
+      }
+    }
+  }
+
   // ==================== UI BUILDERS ====================
 
   @override
@@ -330,6 +385,12 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: Colors.white,
       elevation: 1,
       actions: [
+        if (widget.channel.type == 'ONE_TO_ONE')
+          IconButton(
+            onPressed: _initiateCall,
+            icon: const Icon(Icons.phone),
+            tooltip: 'Appel vocal',
+          ),
         IconButton(
           onPressed: () {
             Navigator.of(context).push(
