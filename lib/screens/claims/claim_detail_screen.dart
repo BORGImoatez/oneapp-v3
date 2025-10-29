@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/claim_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/claim_provider.dart';
 import '../../services/storage_service.dart';
 import '../../utils/app_theme.dart';
@@ -28,9 +29,11 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
   Future<void> _loadClaimAndCheckAdmin() async {
     await Provider.of<ClaimProvider>(context, listen: false)
         .loadClaimById(widget.claimId);
-    final role = await _storageService.getUserRole();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final role = user?.role;
     setState(() {
-      _isAdmin = role == 'ADMIN';
+      _isAdmin = role == 'BUILDING_ADMIN';
     });
   }
 
@@ -158,8 +161,9 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
           Row(
             children: [
               UserAvatar(
-                imageUrl: claim.reporterAvatar,
-                name: claim.reporterName,
+                profilePictureUrl: claim.reporterAvatar,
+                firstName: claim.reporterName,
+                lastName:'',
                 radius: 24,
               ),
               const SizedBox(width: 12),

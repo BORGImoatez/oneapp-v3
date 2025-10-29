@@ -3,6 +3,7 @@ package be.delomid.oneapp.mschat.mschat.controller;
 import be.delomid.oneapp.mschat.mschat.dto.ClaimDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateClaimRequest;
 import be.delomid.oneapp.mschat.mschat.dto.UpdateClaimStatusRequest;
+import be.delomid.oneapp.mschat.mschat.model.MemberRole;
 import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
 import be.delomid.oneapp.mschat.mschat.model.UserRole;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/claims")
@@ -33,7 +35,7 @@ public class ClaimController {
             @RequestParam(value = "photos", required = false) List<MultipartFile> photos
     ) {
         try {
-            Long residentId = SecurityContextUtil.getCurrentUserId();
+            String residentId = SecurityContextUtil.getCurrentUserId();
             ObjectMapper mapper = new ObjectMapper();
             CreateClaimRequest request = mapper.readValue(claimDataJson, CreateClaimRequest.class);
 
@@ -45,16 +47,16 @@ public class ClaimController {
     }
 
     @GetMapping("/building/{buildingId}")
-    public ResponseEntity<List<ClaimDto>> getClaimsByBuilding(@PathVariable Long buildingId) {
+    public ResponseEntity<List<ClaimDto>> getClaimsByBuilding(@PathVariable String buildingId) {
         try {
-            Long residentId = SecurityContextUtil.getCurrentUserId();
+            String residentId = SecurityContextUtil.getCurrentUserId();
 
             // Check if user is admin
-            List<ResidentBuilding> residentBuildings = residentBuildingRepository
+            Optional<ResidentBuilding> residentBuildings = residentBuildingRepository
                     .findByResidentIdAndBuildingId(residentId, buildingId);
 
             boolean isAdmin = residentBuildings.stream()
-                    .anyMatch(rb -> rb.getRoleInBuilding() == UserRole.ADMIN);
+                    .anyMatch(rb -> rb.getRoleInBuilding() .equals(UserRole.BUILDING_ADMIN));
 
             List<ClaimDto> claims = claimService.getClaimsByBuilding(buildingId, residentId, isAdmin);
             return ResponseEntity.ok(claims);

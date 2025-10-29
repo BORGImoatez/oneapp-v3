@@ -16,7 +16,7 @@ class ClaimProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> loadClaims(int buildingId) async {
+  Future<void> loadClaims(String buildingId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -47,13 +47,13 @@ class ClaimProvider with ChangeNotifier {
   }
 
   Future<bool> createClaim({
-    required int apartmentId,
+    required String apartmentId,
     required List<String> claimTypes,
     required String cause,
     required String description,
     String? insuranceCompany,
     String? insurancePolicyNumber,
-    List<int>? affectedApartmentIds,
+    List<String>? affectedApartmentIds,
     List<File>? photos,
   }) async {
     _isLoading = true;

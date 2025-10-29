@@ -26,7 +26,7 @@ class CustomTextField extends StatelessWidget {
     this.validator,
     this.onChanged,
     this.maxLines = 1,
-    this.enabled = true,
+    this.enabled = true
   });
 
   @override

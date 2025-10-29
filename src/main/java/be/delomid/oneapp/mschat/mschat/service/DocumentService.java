@@ -91,7 +91,7 @@ public class DocumentService {
 
         if (request.getParentFolderId() != null) {
             Folder parentFolder = folderRepository.findByIdAndBuildingId(
-                    request.getParentFolderId(), buildingId)
+                            request.getParentFolderId(), buildingId)
                     .orElseThrow(() -> new RuntimeException("Dossier parent non trouvé"));
 
             if (folderRepository.existsByNameAndParentFolderIdAndBuildingId(
@@ -733,7 +733,7 @@ public class DocumentService {
         if (folder.getShareType() == ShareType.SPECIFIC_APARTMENTS) {
             return folder.getPermissions().stream()
                     .anyMatch(p -> (p.getResident() != null && p.getResident().getIdUsers().equals(residentId)) ||
-                                   (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId)));
+                            (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId)));
         }
 
         return false;
@@ -756,7 +756,7 @@ public class DocumentService {
             return folder.getPermissions().stream()
                     .anyMatch(p -> p.getCanUpload() &&
                             ((p.getResident() != null && p.getResident().getIdUsers().equals(residentId)) ||
-                             (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId))));
+                                    (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId))));
         }
 
         return false;
@@ -778,7 +778,7 @@ public class DocumentService {
         if (folder.getShareType() == ShareType.SPECIFIC_APARTMENTS) {
             return folder.getPermissions().stream()
                     .anyMatch(p -> (p.getResident() != null && p.getResident().getIdUsers().equals(residentId)) ||
-                                   (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId)));
+                            (p.getApartment() != null && apartmentId != null && p.getApartment().getIdApartment().equals(apartmentId)));
         }
 
         return false;

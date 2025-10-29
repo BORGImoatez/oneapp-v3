@@ -19,13 +19,13 @@ class ClaimService {
   }
 
   Future<ClaimModel> createClaim({
-    required int apartmentId,
+    required String apartmentId,
     required List<String> claimTypes,
     required String cause,
     required String description,
     String? insuranceCompany,
     String? insurancePolicyNumber,
-    List<int>? affectedApartmentIds,
+    List<String>? affectedApartmentIds,
     List<File>? photos,
   }) async {
     try {
@@ -73,7 +73,7 @@ class ClaimService {
     }
   }
 
-  Future<List<ClaimModel>> getClaimsByBuilding(int buildingId) async {
+  Future<List<ClaimModel>> getClaimsByBuilding(String buildingId) async {
     try {
       final headers = await _getHeaders();
       final response = await http.get(

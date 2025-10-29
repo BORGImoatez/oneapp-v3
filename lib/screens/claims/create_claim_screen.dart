@@ -29,11 +29,11 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
   final ImagePicker _picker = ImagePicker();
 
   List<String> _selectedClaimTypes = [];
-  List<int> _selectedAffectedApartments = [];
+  List<String> _selectedAffectedApartments = [];
   List<File> _selectedPhotos = [];
   List<SimpleApartment> _buildingApartments = [];
   bool _isLoadingApartments = true;
-  int? _userApartmentId;
+  String? _userApartmentId;
 
   @override
   void initState() {
@@ -43,21 +43,32 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
 
   Future<void> _loadUserApartmentAndBuildings() async {
     try {
-      final buildingId = await _contextService.getSelectedBuildingId();
+      final buildingId = await _contextService.getCurrentBuildingId();
       if (buildingId != null) {
         final apartments =
-            await _apartmentService.getApartmentsByBuilding(buildingId);
+        await _apartmentService.getApartmentsByBuilding(buildingId);
         final userApartment =
-            await _apartmentService.getCurrentUserApartment(buildingId);
+        await _apartmentService.getCurrentUserApartment(buildingId);
+
 
         setState(() {
           _buildingApartments = apartments;
           _userApartmentId = userApartment?.id;
           _isLoadingApartments = false;
+          print("hellooo1");
+          print(_buildingApartments.length);
+
+          print(buildingId);
+          print("hellooo1");
         });
       }
+      print("hellooo2");
+      print(buildingId);
+      print("hellooo2");
     } catch (e) {
       setState(() {
+        print("hellooo");
+         print("hellooo");
         _isLoadingApartments = false;
       });
     }
@@ -153,73 +164,73 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
       body: _isLoadingApartments
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Type de sinistre/dégât *'),
-                    const SizedBox(height: 12),
-                    _buildClaimTypesSection(),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Cause du sinistre *'),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      controller: _causeController,
-                      hintText: 'Décrivez la cause du sinistre',
-                      maxLines: 2,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Veuillez indiquer la cause';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Description des dégâts *'),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      controller: _descriptionController,
-                      hintText: 'Décrivez les dégâts en détail',
-                      maxLines: 4,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Veuillez décrire les dégâts';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Assurance RC familiale'),
-                    const SizedBox(height: 8),
-                    CustomTextField(
-                      controller: _insuranceCompanyController,
-                      hintText: 'Compagnie d\'assurance',
-                    ),
-                    const SizedBox(height: 12),
-                    CustomTextField(
-                      controller: _insurancePolicyController,
-                      hintText: 'Numéro de police',
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Appartements touchés'),
-                    const SizedBox(height: 8),
-                    _buildAffectedApartmentsSection(),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle('Photos (optionnel)'),
-                    const SizedBox(height: 8),
-                    _buildPhotosSection(),
-                    const SizedBox(height: 32),
-                    CustomButton(
-                      text: 'Déclarer le sinistre',
-                      onPressed: claimProvider.isLoading ? null : _submitClaim,
-                      isLoading: claimProvider.isLoading,
-                    ),
-                  ],
-                ),
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Type de sinistre/dégât *'),
+              const SizedBox(height: 12),
+              _buildClaimTypesSection(),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Cause du sinistre *'),
+              const SizedBox(height: 8),
+              CustomTextField(
+                controller: _causeController,
+                hint: 'Décrivez la cause du sinistre',
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Veuillez indiquer la cause';
+                  }
+                  return null;
+                }, label: '',
               ),
-            ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Description des dégâts *'),
+              const SizedBox(height: 8),
+              CustomTextField(
+                controller: _descriptionController,
+                hint: 'Décrivez les dégâts en détail',
+                maxLines: 4,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Veuillez décrire les dégâts';
+                  }
+                  return null;
+                }, label: '',
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Assurance RC familiale'),
+              const SizedBox(height: 8),
+              CustomTextField(
+                controller: _insuranceCompanyController,
+                hint: 'Compagnie d\'assurance', label: '',
+              ),
+              const SizedBox(height: 12),
+              CustomTextField(
+                controller: _insurancePolicyController,
+                hint: 'Numéro de police', label: '',
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Appartements touchés'),
+              const SizedBox(height: 8),
+              _buildAffectedApartmentsSection(),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Photos (optionnel)'),
+              const SizedBox(height: 8),
+              _buildPhotosSection(),
+              const SizedBox(height: 32),
+              CustomButton(
+                text: 'Déclarer le sinistre',
+                onPressed: claimProvider.isLoading ? null : _submitClaim,
+                isLoading: claimProvider.isLoading,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

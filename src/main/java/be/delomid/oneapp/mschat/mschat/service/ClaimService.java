@@ -46,7 +46,7 @@ public class ClaimService {
     private NotificationService notificationService;
 
     @Transactional
-    public ClaimDto createClaim(Long residentId, CreateClaimRequest request, List<MultipartFile> photos) {
+    public ClaimDto createClaim(String residentId, CreateClaimRequest request, List<MultipartFile> photos) {
         Resident reporter = residentRepository.findById(residentId)
                 .orElseThrow(() -> new RuntimeException("Reporter not found"));
 
@@ -57,9 +57,9 @@ public class ClaimService {
 
         // Verify that the reporter is a resident of this apartment
         boolean isResident = residentBuildingRepository
-                .findByResidentIdAndBuildingId(residentId, building.getId())
+                .findByResidentIdAndBuildingId(residentId, building.getBuildingId())
                 .stream()
-                .anyMatch(rb -> rb.getApartment().getId().equals(apartment.getId()));
+                .anyMatch(rb -> rb.getApartment().getIdApartment().equals(apartment.getIdApartment()));
 
         if (!isResident) {
             throw new RuntimeException("You can only create claims for your own apartment");
@@ -80,7 +80,7 @@ public class ClaimService {
 
         // Add affected apartments
         if (request.getAffectedApartmentIds() != null && !request.getAffectedApartmentIds().isEmpty()) {
-            for (Long affectedApartmentId : request.getAffectedApartmentIds()) {
+            for (String affectedApartmentId : request.getAffectedApartmentIds()) {
                 Apartment affectedApartment = apartmentRepository.findById(affectedApartmentId)
                         .orElseThrow(() -> new RuntimeException("Affected apartment not found"));
 
@@ -95,7 +95,7 @@ public class ClaimService {
         if (photos != null && !photos.isEmpty()) {
             for (int i = 0; i < photos.size(); i++) {
                 try {
-                    String photoUrl = fileService.uploadFile(photos.get(i), "claims/" + claim.getId());
+                    String photoUrl = fileService.uploadFile(photos.get(i), "claims/" + claim.getId(),claim.getReporter().getIdUsers()).toString();
                     ClaimPhoto photo = new ClaimPhoto();
                     photo.setClaim(claim);
                     photo.setPhotoUrl(photoUrl);
@@ -116,18 +116,16 @@ public class ClaimService {
     private void sendClaimNotifications(Claim claim) {
         // Get all admins of the building
         List<ResidentBuilding> admins = residentBuildingRepository
-                .findByBuildingIdAndRole(claim.getBuilding().getId(), UserRole.ADMIN);
+                .findByBuildingIdAndRole(claim.getBuilding().getBuildingId(), UserRole.BUILDING_ADMIN);
 
         for (ResidentBuilding admin : admins) {
-            NotificationDto notification = NotificationDto.builder()
-                    .residentId(admin.getResident().getId())
-                    .buildingId(claim.getBuilding().getBuildingId())
-                    .title("Nouveau sinistre déclaré")
-                    .body(String.format("Un sinistre a été déclaré pour l'appartement %s",
-                            claim.getApartment().getApartmentNumber()))
-                    .type("CLAIM_NEW")
-                    .relatedId(claim.getId())
-                    .build();
+            NotificationDto notification = new NotificationDto();
+            notification.setResidentId(admin.getResident().getIdUsers());
+            notification.setTitle("Nouveau sinistre déclaré");
+            notification.setBody(String.format("Un sinistre a été déclaré pour l'appartement %s",
+                    claim.getApartment().getApartmentNumber()));
+            notification.setType("CLAIM_NEW");
+            notification.setRelatedId(claim.getId());
             notificationService.sendNotification(notification);
         }
 
@@ -135,30 +133,28 @@ public class ClaimService {
         List<ClaimAffectedApartment> affectedApartments = claimAffectedApartmentRepository.findByClaimId(claim.getId());
         for (ClaimAffectedApartment affectedApt : affectedApartments) {
             List<ResidentBuilding> residents = residentBuildingRepository
-                    .findByBuildingIdAndApartmentId(claim.getBuilding().getId(), affectedApt.getApartment().getId());
+                    .findByBuildingIdAndApartmentId(claim.getBuilding().getBuildingId(), affectedApt.getApartment().getIdApartment());
 
             for (ResidentBuilding resident : residents) {
-                if (!resident.getResident().getId().equals(claim.getReporter().getId())) {
-                    NotificationDto notification = NotificationDto.builder()
-                            .residentId(resident.getResident().getId())
-                            .buildingId(claim.getBuilding().getBuildingId())
-                            .title("Votre appartement est concerné par un sinistre")
-                            .body(String.format("Un sinistre déclaré par l'appartement %s concerne votre logement",
-                                    claim.getApartment().getApartmentNumber()))
-                            .type("CLAIM_AFFECTED")
-                            .relatedId(claim.getId())
-                            .build();
+                if (!resident.getResident().getIdUsers().equals(claim.getReporter().getIdUsers())) {
+                    NotificationDto notification = new NotificationDto();
+                    notification.setResidentId(resident.getResident().getIdUsers());
+                    notification.setTitle("Votre appartement est concerné par un sinistre");
+                    notification.setBody(String.format("Un sinistre déclaré par l'appartement %s concerne votre logement",
+                            claim.getApartment().getApartmentNumber()));
+                    notification.setType("CLAIM_AFFECTED");
+                    notification.setRelatedId(claim.getId());
                     notificationService.sendNotification(notification);
                 }
             }
         }
     }
 
-    public List<ClaimDto> getClaimsByBuilding(Long buildingId, Long residentId, boolean isAdmin) {
+    public List<ClaimDto> getClaimsByBuilding(String buildingId, String residentId, boolean isAdmin) {
         List<Claim> claims;
 
         if (isAdmin) {
-            claims = claimRepository.findByBuildingIdOrderByCreatedAtDesc(buildingId);
+            claims = claimRepository.findByBuilding_BuildingIdOrderByCreatedAtDesc(buildingId);
         } else {
             claims = claimRepository.findClaimsByBuildingAndResident(buildingId, residentId);
         }
@@ -183,14 +179,12 @@ public class ClaimService {
         claim = claimRepository.save(claim);
 
         // Send notification to reporter
-        NotificationDto notification = NotificationDto.builder()
-                .residentId(claim.getReporter().getId())
-                .buildingId(claim.getBuilding().getBuildingId())
-                .title("Mise à jour du statut de votre sinistre")
-                .body(String.format("Le statut de votre sinistre a été mis à jour: %s", status))
-                .type("CLAIM_STATUS_UPDATE")
-                .relatedId(claim.getId())
-                .build();
+        NotificationDto notification = new NotificationDto();
+        notification.setResidentId(claim.getReporter().getIdUsers());
+        notification.setTitle("Mise à jour du statut de votre sinistre");
+        notification.setBody(String.format("Le statut de votre sinistre a été mis à jour: %s", status));
+        notification.setType("CLAIM_STATUS_UPDATE");
+        notification.setRelatedId(claim.getId());
         notificationService.sendNotification(notification);
 
         return convertToDto(claim);
@@ -206,13 +200,13 @@ public class ClaimService {
     private ClaimDto convertToDto(Claim claim) {
         ClaimDto dto = new ClaimDto();
         dto.setId(claim.getId());
-        dto.setApartmentId(claim.getApartment().getId());
+        dto.setApartmentId(claim.getApartment().getIdApartment());
         dto.setApartmentNumber(claim.getApartment().getApartmentNumber());
-        dto.setBuildingId(claim.getBuilding().getId());
-        dto.setBuildingName(claim.getBuilding().getName());
-        dto.setReporterId(claim.getReporter().getId());
-        dto.setReporterName(claim.getReporter().getFirstName() + " " + claim.getReporter().getLastName());
-        dto.setReporterAvatar(PictureUrlUtil.getFullPictureUrl(claim.getReporter().getPictureUrl()));
+        dto.setBuildingId(claim.getBuilding().getBuildingId());
+        dto.setBuildingName(claim.getBuilding().getBuildingLabel());
+        dto.setReporterId(claim.getReporter().getIdUsers());
+        dto.setReporterName(claim.getReporter().getFname() + " " + claim.getReporter().getLname());
+        dto.setReporterAvatar(PictureUrlUtil.normalizePictureUrl(claim.getReporter().getPicture()));
         dto.setClaimTypes(Arrays.asList(claim.getClaimTypes()));
         dto.setCause(claim.getCause());
         dto.setDescription(claim.getDescription());
@@ -225,7 +219,7 @@ public class ClaimService {
         // Get affected apartments
         List<ClaimAffectedApartment> affectedApts = claimAffectedApartmentRepository.findByClaimId(claim.getId());
         dto.setAffectedApartmentIds(affectedApts.stream()
-                .map(aa -> aa.getApartment().getId())
+                .map(aa -> aa.getApartment().getIdApartment())
                 .collect(Collectors.toList()));
 
         // Get photos
@@ -240,7 +234,7 @@ public class ClaimService {
     private ClaimPhotoDto convertPhotoToDto(ClaimPhoto photo) {
         ClaimPhotoDto dto = new ClaimPhotoDto();
         dto.setId(photo.getId());
-        dto.setPhotoUrl(PictureUrlUtil.getFullPictureUrl(photo.getPhotoUrl()));
+        dto.setPhotoUrl(PictureUrlUtil.normalizePictureUrl(photo.getPhotoUrl()));
         dto.setPhotoOrder(photo.getPhotoOrder());
         dto.setCreatedAt(photo.getCreatedAt());
         return dto;

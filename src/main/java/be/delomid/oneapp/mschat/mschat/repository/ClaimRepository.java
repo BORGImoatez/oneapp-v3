@@ -12,19 +12,14 @@ import java.util.List;
 @Repository
 public interface ClaimRepository extends JpaRepository<Claim, Long> {
 
-    List<Claim> findByBuildingIdOrderByCreatedAtDesc(Long buildingId);
+    List<Claim> findByBuilding_BuildingIdOrderByCreatedAtDesc(String buildingId);
 
-    List<Claim> findByApartmentIdOrderByCreatedAtDesc(Long apartmentId);
 
-    List<Claim> findByReporterIdOrderByCreatedAtDesc(Long reporterId);
-
-    List<Claim> findByBuildingIdAndStatusOrderByCreatedAtDesc(Long buildingId, ClaimStatus status);
-
-    @Query("SELECT c FROM Claim c WHERE c.building.id = :buildingId " +
-           "AND (c.reporter.id = :residentId OR c.apartment.id IN " +
-           "(SELECT rb.apartment.id FROM ResidentBuilding rb WHERE rb.resident.id = :residentId) " +
+    @Query("SELECT c FROM Claim c WHERE c.building.buildingId = :buildingId " +
+           "AND (c.reporter.idUsers = :residentId OR c.apartment.idApartment IN " +
+           "(SELECT rb.apartment.idApartment FROM ResidentBuilding rb WHERE rb.resident.idUsers = :residentId) " +
            "OR c.id IN (SELECT caa.claim.id FROM ClaimAffectedApartment caa " +
-           "WHERE caa.apartment.id IN (SELECT rb.apartment.id FROM ResidentBuilding rb WHERE rb.resident.id = :residentId))) " +
+           "WHERE caa.apartment.idApartment IN (SELECT rb.apartment.idApartment FROM ResidentBuilding rb WHERE rb.resident.idUsers = :residentId))) " +
            "ORDER BY c.createdAt DESC")
-    List<Claim> findClaimsByBuildingAndResident(@Param("buildingId") Long buildingId, @Param("residentId") Long residentId);
+    List<Claim> findClaimsByBuildingAndResident(@Param("buildingId") String buildingId, @Param("residentId") String residentId);
 }

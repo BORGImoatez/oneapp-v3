@@ -25,7 +25,7 @@ class _ClaimsScreenState extends State<ClaimsScreen> {
   }
 
   Future<void> _loadClaims() async {
-    final buildingId = await _contextService.getSelectedBuildingId();
+    final buildingId = await _contextService.getCurrentBuildingId();
     if (buildingId != null) {
       Provider.of<ClaimProvider>(context, listen: false).loadClaims(buildingId);
     }
@@ -150,9 +150,9 @@ class _ClaimsScreenState extends State<ClaimsScreen> {
             children: [
               Row(
                 children: [
-                  UserAvatar(
-                    imageUrl: claim.reporterAvatar,
-                    name: claim.reporterName,
+                  UserAvatar( profilePictureUrl: claim.reporterAvatar,
+                    firstName: claim.reporterName,
+                    lastName:'',
                     radius: 20,
                   ),
                   const SizedBox(width: 12),

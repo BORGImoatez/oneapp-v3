@@ -36,9 +36,9 @@ class ApartmentDetailsService {
   }
 
   Future<ApartmentDetailsModel> updateApartmentDetails(
-    String apartmentId,
-    Map<String, dynamic> updates,
-  ) async {
+      String apartmentId,
+      Map<String, dynamic> updates,
+      ) async {
     try {
       final token = await _getToken();
 
@@ -63,9 +63,9 @@ class ApartmentDetailsService {
   }
 
   Future<ApartmentPhotoModel> uploadPhoto(
-    String apartmentId,
-    File imageFile,
-  ) async {
+      String apartmentId,
+      File imageFile,
+      ) async {
     try {
       var request = http.MultipartRequest(
         'POST',
@@ -96,7 +96,7 @@ class ApartmentDetailsService {
         final data = json.decode(utf8.decode(response.bodyBytes));
         return ApartmentPhotoModel.fromJson(data);
       } else {
-         final errorBody = utf8.decode(response.bodyBytes);
+        final errorBody = utf8.decode(response.bodyBytes);
         print('❌ Upload photo failed: ${response.statusCode}');
         print('➡️ Response body: $errorBody');
         throw Exception('Failed to upload photo: $response');
@@ -141,9 +141,9 @@ class ApartmentDetailsService {
   }
 
   Future<void> reorderPhotos(
-    int apartmentId,
-    List<int> photoIds,
-  ) async {
+      int apartmentId,
+      List<int> photoIds,
+      ) async {
     try {
       final token = await _getToken();
       final response = await http.put(
@@ -163,7 +163,7 @@ class ApartmentDetailsService {
     }
   }
 
-  Future<List<SimpleApartment>> getApartmentsByBuilding(int buildingId) async {
+  Future<List<SimpleApartment>> getApartmentsByBuilding(String buildingId) async {
     try {
       final token = await _getToken();
       final response = await http.get(
@@ -186,10 +186,11 @@ class ApartmentDetailsService {
     }
   }
 
-  Future<SimpleApartment?> getCurrentUserApartment(int buildingId) async {
+  Future<SimpleApartment?> getCurrentUserApartment(String buildingId) async {
     try {
       final apartments = await getApartmentsByBuilding(buildingId);
       if (apartments.isNotEmpty) {
+        print("ani hne");
         return apartments.first;
       }
       return null;
@@ -200,7 +201,7 @@ class ApartmentDetailsService {
 }
 
 class SimpleApartment {
-  final int id;
+  final String id;
   final String apartmentNumber;
   final int? floor;
 

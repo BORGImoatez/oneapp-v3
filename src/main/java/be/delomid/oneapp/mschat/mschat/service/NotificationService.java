@@ -28,7 +28,7 @@ public class NotificationService {
 
     @Transactional
     public Notification createNotification(String residentId, String buildingId, String title, String body,
-                                          String type, Long channelId, Long voteId, Long documentId) {
+                                           String type, Long channelId, Long voteId, Long documentId) {
         Resident resident = residentRepository.findById(residentId)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
 
@@ -58,11 +58,11 @@ public class NotificationService {
         if (resident.getFcmToken() != null && !resident.getFcmToken().isEmpty()) {
             try {
                 fcmService.sendPushNotification(
-                    resident.getFcmToken(),
-                    title,
-                    body,
-                    type,
-                    channelId != null ? channelId.toString() : null
+                        resident.getFcmToken(),
+                        title,
+                        body,
+                        type,
+                        channelId != null ? channelId.toString() : null
                 );
                 log.info("Push notification sent to resident: {}", residentId);
             } catch (Exception e) {
@@ -140,11 +140,11 @@ public class NotificationService {
         if (resident.getFcmToken() != null && !resident.getFcmToken().isEmpty()) {
             try {
                 fcmService.sendPushNotification(
-                    resident.getFcmToken(),
-                    notificationDto.getTitle(),
-                    notificationDto.getBody(),
-                    notificationDto.getType(),
-                    notificationDto.getRelatedId() != null ? notificationDto.getRelatedId().toString() : null
+                        resident.getFcmToken(),
+                        notificationDto.getTitle(),
+                        notificationDto.getBody(),
+                        notificationDto.getType(),
+                        notificationDto.getRelatedId() != null ? notificationDto.getRelatedId().toString() : null
                 );
                 log.info("Push notification sent to resident: {}", notificationDto.getResidentId());
             } catch (Exception e) {
@@ -156,7 +156,7 @@ public class NotificationService {
     private NotificationDto toDto(Notification notification) {
         return NotificationDto.builder()
                 .id(notification.getId())
-                .residentId(notification.getResident().getId())
+                .residentId(notification.getResident().getIdUsers())
                 .buildingId(notification.getBuilding() != null ? notification.getBuilding().getBuildingId() : null)
                 .title(notification.getTitle())
                 .body(notification.getBody())
