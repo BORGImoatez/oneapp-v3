@@ -65,8 +65,16 @@ class ClaimService {
         final data = jsonDecode(response.body);
         return ClaimModel.fromJson(data);
       } else {
-        final error = jsonDecode(response.body);
-        throw Exception(error['message'] ?? 'Failed to create claim');
+        String errorMessage = 'Failed to create claim';
+        if (response.body.isNotEmpty) {
+          try {
+            final error = jsonDecode(response.body);
+            errorMessage = error['message'] ?? errorMessage;
+          } catch (e) {
+            errorMessage = response.body;
+          }
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       throw Exception('Error creating claim: $e');

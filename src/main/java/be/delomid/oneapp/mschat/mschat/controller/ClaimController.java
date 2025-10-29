@@ -30,7 +30,7 @@ public class ClaimController {
     private ResidentBuildingRepository residentBuildingRepository;
 
     @PostMapping
-    public ResponseEntity<ClaimDto> createClaim(
+    public ResponseEntity<?> createClaim(
             @RequestParam("claimData") String claimDataJson,
             @RequestParam(value = "photos", required = false) List<MultipartFile> photos
     ) {
@@ -42,7 +42,9 @@ public class ClaimController {
             ClaimDto claim = claimService.createClaim(residentId, request, photos);
             return ResponseEntity.ok(claim);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Failed to create claim"));
         }
     }
 
