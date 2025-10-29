@@ -4,6 +4,7 @@ import be.delomid.oneapp.mschat.mschat.dto.*;
 import be.delomid.oneapp.mschat.mschat.model.*;
 import be.delomid.oneapp.mschat.mschat.repository.*;
 import be.delomid.oneapp.mschat.mschat.util.PictureUrlUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,37 +14,30 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ClaimService {
 
-    @Autowired
-    private ClaimRepository claimRepository;
+     private final ClaimRepository claimRepository;
 
-    @Autowired
-    private ClaimAffectedApartmentRepository claimAffectedApartmentRepository;
+     private final ClaimAffectedApartmentRepository claimAffectedApartmentRepository;
 
-    @Autowired
-    private ClaimPhotoRepository claimPhotoRepository;
+     private final ClaimPhotoRepository claimPhotoRepository;
 
-    @Autowired
-    private ApartmentRepository apartmentRepository;
+     private final ApartmentRepository apartmentRepository;
 
-    @Autowired
-    private BuildingRepository buildingRepository;
+     private final BuildingRepository buildingRepository;
 
-    @Autowired
-    private ResidentRepository residentRepository;
+     private final ResidentRepository residentRepository;
 
-    @Autowired
-    private ResidentBuildingRepository residentBuildingRepository;
+     private final ResidentBuildingRepository residentBuildingRepository;
 
-    @Autowired
-    private FileService fileService;
+     private final FileService fileService;
 
-    @Autowired
-    private NotificationService notificationService;
+     private final NotificationService notificationService;
 
     @Transactional
     public ClaimDto createClaim(String residentId, CreateClaimRequest request, List<MultipartFile> photos) {
@@ -94,8 +88,11 @@ public class ClaimService {
         // Upload photos
         if (photos != null && !photos.isEmpty()) {
             for (int i = 0; i < photos.size(); i++) {
+
                 try {
-                    String photoUrl = fileService.uploadFile(photos.get(i), "claims/" + claim.getId(),claim.getReporter().getIdUsers()).toString();
+                    Map<String, Object> uploadResult  = fileService.uploadFile(photos.get(i), "IMAGE",claim.getReporter().getIdUsers());
+                    String photoUrl = uploadResult.get("url").toString();
+
                     ClaimPhoto photo = new ClaimPhoto();
                     photo.setClaim(claim);
                     photo.setPhotoUrl(photoUrl);
@@ -125,6 +122,7 @@ public class ClaimService {
             notification.setBody(String.format("Un sinistre a été déclaré pour l'appartement %s",
                     claim.getApartment().getApartmentNumber()));
             notification.setType("CLAIM_NEW");
+            notification.setBuildingId(claim.getBuilding().getBuildingId());
             notification.setRelatedId(claim.getId());
             notificationService.sendNotification(notification);
         }
@@ -144,6 +142,7 @@ public class ClaimService {
                             claim.getApartment().getApartmentNumber()));
                     notification.setType("CLAIM_AFFECTED");
                     notification.setRelatedId(claim.getId());
+                    notification.setBuildingId(claim.getBuilding().getBuildingId());
                     notificationService.sendNotification(notification);
                 }
             }
@@ -185,6 +184,8 @@ public class ClaimService {
         notification.setBody(String.format("Le statut de votre sinistre a été mis à jour: %s", status));
         notification.setType("CLAIM_STATUS_UPDATE");
         notification.setRelatedId(claim.getId());
+        notification.setBuildingId(claim.getBuilding().getBuildingId());
+
         notificationService.sendNotification(notification);
 
         return convertToDto(claim);

@@ -166,36 +166,24 @@ class ApartmentDetailsService {
   Future<List<SimpleApartment>> getApartmentsByBuilding(String buildingId) async {
     try {
       final token = await _getToken();
-      final url = '${Constants.baseUrl}/api/apartments/building/$buildingId';
-      print('🔍 Fetching apartments from: $url');
-
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('${Constants.baseUrl}/apartments/building/$buildingId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
-      print('📊 Response status: ${response.statusCode}');
-      print('📦 Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
-        print('📋 Parsed data keys: ${data.keys}');
         final List<dynamic> apartments = data['content'] ?? [];
-        print('🏢 Number of apartments found: ${apartments.length}');
-
-        if (apartments.isNotEmpty) {
-          print('🔎 First apartment data: ${apartments[0]}');
-        }
-
+        print('waywaa bouha');
+        print(apartments);
         return apartments.map((apt) => SimpleApartment.fromJson(apt)).toList();
       } else {
-        throw Exception('Failed to load apartments: ${response.statusCode}');
+        throw Exception('Failed to load apartments');
       }
     } catch (e) {
-      print('❌ Error loading apartments: $e');
       throw Exception('Error loading apartments: $e');
     }
   }
@@ -203,32 +191,24 @@ class ApartmentDetailsService {
   Future<SimpleApartment?> getCurrentUserApartment(String buildingId) async {
     try {
       final token = await _getToken();
-      final url = '${Constants.baseUrl}/api/apartments/current?buildingId=$buildingId';
-      print('👤 Fetching current user apartment from: $url');
-
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('${Constants.baseUrl}/apartments/current?buildingId=$buildingId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
-      print('📊 User apartment response status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = json.decode(utf8.decode(response.bodyBytes));
-        print('🏠 User apartment data: $data');
         return SimpleApartment.fromJson(data);
       } else if (response.statusCode == 404) {
-        print('⚠️ No apartment found for current user');
         return null;
       } else {
-        print('❌ Failed to load user apartment: ${response.statusCode}');
-        throw Exception('Failed to load user apartment: ${response.statusCode}');
+        print(response.body);
+        throw Exception('Failed to load user apartment:');
       }
     } catch (e) {
-      print('❌ Error getting user apartment: $e');
       throw Exception('Error getting user apartment: $e');
     }
   }
@@ -246,12 +226,10 @@ class SimpleApartment {
   });
 
   factory SimpleApartment.fromJson(Map<String, dynamic> json) {
-    print('🔧 Parsing apartment: $json');
-
     return SimpleApartment(
-      id: json['id'] ?? json['idApartment'] ?? '',
+      id: json['id'],
       apartmentNumber: json['apartmentNumber'] ?? '',
-      floor: json['floor'] ?? json['apartmentFloor'],
+      floor: json['floor'],
     );
   }
 }

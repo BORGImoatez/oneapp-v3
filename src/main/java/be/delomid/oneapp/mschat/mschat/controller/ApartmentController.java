@@ -106,11 +106,9 @@ public class ApartmentController {
     }
 
     private String getUserId(Authentication authentication) {
-        if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
-            JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+        if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal principal) {
             return principal.getName();
-        } else if (authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        } else if (authentication.getPrincipal() instanceof UserDetails userDetails) {
             return userDetails.getUsername();
         }
         return authentication.getName();

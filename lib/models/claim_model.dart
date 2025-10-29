@@ -1,10 +1,10 @@
 class ClaimModel {
   final int id;
-  final int apartmentId;
+  final String apartmentId;
   final String apartmentNumber;
-  final int buildingId;
+  final String buildingId;
   final String buildingName;
-  final int reporterId;
+  final String reporterId;
   final String reporterName;
   final String? reporterAvatar;
   final List<String> claimTypes;
@@ -15,7 +15,7 @@ class ClaimModel {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final List<int> affectedApartmentIds;
+  final List<String> affectedApartmentIds;
   final List<ClaimPhotoModel> photos;
 
   ClaimModel({
@@ -57,7 +57,7 @@ class ClaimModel {
       status: json['status'],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      affectedApartmentIds: List<int>.from(json['affectedApartmentIds'] ?? []),
+      affectedApartmentIds: List<String>.from(json['affectedApartmentIds'] ?? []),
       photos: (json['photos'] as List<dynamic>?)
               ?.map((p) => ClaimPhotoModel.fromJson(p))
               .toList() ??

@@ -157,8 +157,10 @@ public class ApartmentService {
     public ApartmentDto getCurrentUserApartment(String buildingId, String userId) {
         log.debug("Getting apartment for user {} in building {}", userId, buildingId);
 
-        Optional<ResidentBuilding> residentBuilding = residentBuildingRepository
-                .findByResidentIdAndBuildingId(userId, buildingId);
+        Optional<ResidentBuilding> residentBuilding =
+                residentBuildingRepository.findByResidentIdAndBuildingId(userId, buildingId)
+                        .or(() -> residentBuildingRepository.findByResidentEmailAndBuildingId(userId, buildingId));
+
 
         if (residentBuilding.isEmpty() || residentBuilding.get().getApartment() == null) {
             throw new IllegalArgumentException("No apartment found for current user in building: " + buildingId);
