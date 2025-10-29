@@ -249,6 +249,16 @@ class ChannelProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<List<Map<String, dynamic>>> getChannelMembers(int channelId) async {
+    try {
+      final response = await _apiService.getChannelMembers(channelId);
+      return (response as List).map((e) => e as Map<String, dynamic>).toList();
+    } catch (e) {
+      print('DEBUG: Error loading channel members: $e');
+      return [];
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

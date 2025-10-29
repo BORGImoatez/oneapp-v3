@@ -7,6 +7,7 @@ import 'dart:io';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/call_provider.dart';
+import '../../providers/channel_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../models/channel_model.dart';
@@ -297,6 +298,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initiateCall() async {
     final callProvider = Provider.of<CallProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
 
     if (widget.channel.type != 'ONE_TO_ONE') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -308,10 +310,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     try {
+      final members = await channelProvider.getChannelMembers(widget.channel.id);
+
       String? receiverId;
-      for (var member in widget.channel.members) {
-        if (member.userId != authProvider.user?.idUsers) {
-          receiverId = member.userId;
+      for (var member in members) {
+        if (member['userId'] != authProvider.user?.idUsers) {
+          receiverId = member['userId'];
           break;
         }
       }

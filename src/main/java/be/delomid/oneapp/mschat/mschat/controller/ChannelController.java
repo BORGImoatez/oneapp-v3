@@ -168,6 +168,16 @@ public class ChannelController {
         return ResponseEntity.ok(channelDetails);
     }
 
+    @GetMapping("/{channelId}/members")
+    public ResponseEntity<List<be.delomid.oneapp.mschat.mschat.dto.ChannelMemberDto>> getChannelMembers(
+            @PathVariable Long channelId,
+            Authentication authentication) {
+
+        String userId = getUserId(authentication);
+        List<be.delomid.oneapp.mschat.mschat.dto.ChannelMemberDto> members = channelService.getChannelMembers(channelId, userId);
+        return ResponseEntity.ok(members);
+    }
+
     private String getUserId(Authentication authentication) {
         if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
             JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();

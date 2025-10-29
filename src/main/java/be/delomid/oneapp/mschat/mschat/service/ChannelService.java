@@ -788,4 +788,38 @@ public class ChannelService {
             log.error("Error sending channel creation notifications: {}", e.getMessage(), e);
         }
     }
+
+    public List<ChannelMemberDto> getChannelMembers(Long channelId, String userId) {
+        // Vérifier que l'utilisateur est membre du canal
+        Optional<Resident> resident = residentRepository.findByEmail(userId)
+                .or(() -> residentRepository.findById(userId));
+
+        if (resident.isEmpty()) {
+            throw new UnauthorizedAccessException("User not found");
+        }
+
+        String realUserId = resident.get().getIdUsers();
+
+        Optional<ChannelMember> userMembership = channelMemberRepository
+                .findByChannelIdAndUserId(channelId, realUserId);
+
+        if (userMembership.isEmpty() || !userMembership.get().getIsActive()) {
+            throw new UnauthorizedAccessException("User is not a member of this channel");
+        }
+
+        // Récupérer tous les membres actifs du canal
+        List<ChannelMember> members = channelMemberRepository.findActiveByChannelId(channelId);
+
+        return members.stream()
+                .map(member -> ChannelMemberDto.builder()
+                        .id(member.getId())
+                        .userId(member.getUserId())
+                        .role(member.getRole())
+                        .canWrite(member.getCanWrite())
+                        .isActive(member.getIsActive())
+                        .joinedAt(member.getJoinedAt())
+                        .leftAt(member.getLeftAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
