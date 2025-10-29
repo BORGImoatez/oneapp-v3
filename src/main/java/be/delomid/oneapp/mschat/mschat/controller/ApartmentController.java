@@ -2,6 +2,7 @@ package be.delomid.oneapp.mschat.mschat.controller;
 
 import be.delomid.oneapp.mschat.mschat.dto.ApartmentDto;
 import be.delomid.oneapp.mschat.mschat.dto.CreateApartmentRequest;
+import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.service.ApartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -105,6 +106,13 @@ public class ApartmentController {
     }
 
     private String getUserId(Authentication authentication) {
-        return (String) authentication.getPrincipal();
+        if (authentication.getPrincipal() instanceof JwtWebSocketInterceptor.JwtPrincipal) {
+            JwtWebSocketInterceptor.JwtPrincipal principal = (JwtWebSocketInterceptor.JwtPrincipal) authentication.getPrincipal();
+            return principal.getName();
+        } else if (authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            return userDetails.getUsername();
+        }
+        return authentication.getName();
     }
 }
