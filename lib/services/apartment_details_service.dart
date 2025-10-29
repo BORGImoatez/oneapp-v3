@@ -167,7 +167,7 @@ class ApartmentDetailsService {
     try {
       final token = await _getToken();
       final response = await http.get(
-        Uri.parse('${Constants.baseUrl}/apartments/building/$buildingId'),
+        Uri.parse('${Constants.baseUrl}/api/apartments/building/$buildingId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -188,12 +188,23 @@ class ApartmentDetailsService {
 
   Future<SimpleApartment?> getCurrentUserApartment(String buildingId) async {
     try {
-      final apartments = await getApartmentsByBuilding(buildingId);
-      if (apartments.isNotEmpty) {
-        print("ani hne");
-        return apartments.first;
+      final token = await _getToken();
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/api/apartments/current?buildingId=$buildingId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return SimpleApartment.fromJson(data);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception('Failed to load user apartment');
       }
-      return null;
     } catch (e) {
       throw Exception('Error getting user apartment: $e');
     }

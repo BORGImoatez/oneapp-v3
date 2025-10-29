@@ -7,9 +7,11 @@ import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
 import be.delomid.oneapp.mschat.mschat.model.Apartment;
 import be.delomid.oneapp.mschat.mschat.model.Building;
 import be.delomid.oneapp.mschat.mschat.model.Resident;
+import be.delomid.oneapp.mschat.mschat.model.ResidentBuilding;
 import be.delomid.oneapp.mschat.mschat.repository.ApartmentRepository;
 import be.delomid.oneapp.mschat.mschat.repository.BuildingRepository;
 import be.delomid.oneapp.mschat.mschat.repository.ResidentRepository;
+import be.delomid.oneapp.mschat.mschat.repository.ResidentBuildingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,7 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final BuildingRepository buildingRepository;
     private final ResidentRepository residentRepository;
+    private final ResidentBuildingRepository residentBuildingRepository;
 
     @Transactional
     public ApartmentDto createApartment(CreateApartmentRequest request) {
@@ -150,6 +154,20 @@ public class ApartmentService {
         log.debug("Apartment deleted: {}", apartmentId);
     }
 
+    public ApartmentDto getCurrentUserApartment(String buildingId, String userId) {
+        log.debug("Getting apartment for user {} in building {}", userId, buildingId);
+
+        Optional<ResidentBuilding> residentBuilding = residentBuildingRepository
+                .findByResidentIdAndBuildingId(userId, buildingId);
+
+        if (residentBuilding.isEmpty() || residentBuilding.get().getApartment() == null) {
+            throw new IllegalArgumentException("No apartment found for current user in building: " + buildingId);
+        }
+
+        Apartment apartment = residentBuilding.get().getApartment();
+        return convertToDto(apartment);
+    }
+
     private ApartmentDto convertToDto(Apartment apartment) {
         ResidentDto residentDto = null;
         if (apartment.getResident() != null) {
@@ -169,10 +187,12 @@ public class ApartmentService {
         }
 
         return ApartmentDto.builder()
+                .id(apartment.getIdApartment())
                 .idApartment(apartment.getIdApartment())
                 .apartmentLabel(apartment.getApartmentLabel())
                 .apartmentNumber(apartment.getApartmentNumber())
                 .apartmentFloor(apartment.getApartmentFloor())
+                .floor(apartment.getApartmentFloor())
                 .livingAreaSurface(apartment.getLivingAreaSurface())
                 .numberOfRooms(apartment.getNumberOfRooms())
                 .numberOfBedrooms(apartment.getNumberOfBedrooms())

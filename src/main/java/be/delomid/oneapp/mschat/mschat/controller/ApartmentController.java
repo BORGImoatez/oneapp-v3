@@ -57,6 +57,15 @@ public class ApartmentController {
         return ResponseEntity.ok(apartments);
     }
 
+    @GetMapping("/current")
+    public ResponseEntity<ApartmentDto> getCurrentUserApartment(
+            @RequestParam String buildingId,
+            Authentication authentication) {
+        String userId = getUserId(authentication);
+        ApartmentDto apartment = apartmentService.getCurrentUserApartment(buildingId, userId);
+        return ResponseEntity.ok(apartment);
+    }
+
     @PostMapping("/{apartmentId}/assign/{userId}")
     public ResponseEntity<ApartmentDto> assignResidentToApartment(
             @PathVariable String apartmentId,
@@ -96,7 +105,6 @@ public class ApartmentController {
     }
 
     private String getUserId(Authentication authentication) {
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userDetails.getUsername(); // Email, mais on devrait récupérer l'ID
+        return (String) authentication.getPrincipal();
     }
 }

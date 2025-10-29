@@ -9,10 +9,12 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class ApartmentDto {
+    private String id;
     private String idApartment;
     private String apartmentLabel;
     private String apartmentNumber;
     private Integer apartmentFloor;
+    private Integer floor;
     private BigDecimal livingAreaSurface;
     private Integer numberOfRooms;
     private Integer numberOfBedrooms;
