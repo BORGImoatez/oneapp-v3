@@ -44,31 +44,40 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
   Future<void> _loadUserApartmentAndBuildings() async {
     try {
       final buildingId = await _contextService.getCurrentBuildingId();
+      print('🏢 Current building ID: $buildingId');
+
       if (buildingId != null) {
         final apartments =
         await _apartmentService.getApartmentsByBuilding(buildingId);
         final userApartment =
         await _apartmentService.getCurrentUserApartment(buildingId);
 
+        print('📋 Total apartments loaded: ${apartments.length}');
+        print('👤 User apartment ID: ${userApartment?.id}');
+
+        // Print all apartment IDs for debugging
+        for (var apt in apartments) {
+          print('🏠 Apartment: ${apt.apartmentNumber} (ID: ${apt.id}, Floor: ${apt.floor})');
+        }
 
         setState(() {
           _buildingApartments = apartments;
           _userApartmentId = userApartment?.id;
           _isLoadingApartments = false;
-          print("hellooo1");
-          print(_buildingApartments.length);
-
-          print(buildingId);
-          print("hellooo1");
         });
+
+        // Debug filtering
+        final filteredApartments = _buildingApartments
+            .where((apt) => apt.id != _userApartmentId)
+            .toList();
+        print('🔍 Filtered apartments (excluding user): ${filteredApartments.length}');
+        for (var apt in filteredApartments) {
+          print('  ➤ ${apt.apartmentNumber} (ID: ${apt.id})');
+        }
       }
-      print("hellooo2");
-      print(buildingId);
-      print("hellooo2");
     } catch (e) {
+      print('❌ Error in _loadUserApartmentAndBuildings: $e');
       setState(() {
-        print("hellooo");
-         print("hellooo");
         _isLoadingApartments = false;
       });
     }
