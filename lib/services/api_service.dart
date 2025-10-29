@@ -157,13 +157,13 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  Future<dynamic> getChannelMembers(int channelId) async {
+  Future<List<dynamic>> getChannelMembers(int channelId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/channels/$channelId/members'),
       headers: await _getHeaders(),
     );
 
-    return _handleResponse(response);
+    return _handleListResponse(response);
   }
 
   // Message endpoints
