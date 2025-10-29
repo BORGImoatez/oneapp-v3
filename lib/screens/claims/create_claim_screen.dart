@@ -279,17 +279,32 @@ class _CreateClaimScreenState extends State<CreateClaimScreen> {
   }
 
   Widget _buildAffectedApartmentsSection() {
+    // Get all apartments except the user's apartment
+    final otherApartments = _buildingApartments
+        .where((apt) => apt.id != _userApartmentId)
+        .toList();
+
+    print('🔍 Building apartments section:');
+    print('   Total apartments: ${_buildingApartments.length}');
+    print('   User apartment ID: $_userApartmentId');
+    print('   Other apartments: ${otherApartments.length}');
+
     if (_buildingApartments.isEmpty) {
       return const Text(
-        'Aucun autre appartement disponible',
+        'Aucun appartement trouvé dans ce bâtiment',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    if (otherApartments.isEmpty) {
+      return const Text(
+        'Aucun autre appartement disponible (vous êtes le seul dans ce bâtiment)',
         style: TextStyle(color: Colors.grey),
       );
     }
 
     return Column(
-      children: _buildingApartments
-          .where((apt) => apt.id != _userApartmentId)
-          .map((apartment) {
+      children: otherApartments.map((apartment) {
         final isSelected = _selectedAffectedApartments.contains(apartment.id);
         return CheckboxListTile(
           title: Text('Appartement ${apartment.apartmentNumber}'),
