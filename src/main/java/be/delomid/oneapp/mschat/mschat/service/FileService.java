@@ -170,27 +170,31 @@ public class FileService {
     }
 
     private void validateFile(MultipartFile file, String type) {
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
         }
 
         if (file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException("File size exceeds maximum allowed size");
+            throw new IllegalArgumentException("File size exceeds maximum allowed size of " + (maxFileSize / 1024 / 1024) + "MB");
         }
 
         String contentType = file.getContentType();
         if (contentType == null) {
-            throw new IllegalArgumentException("Invalid file type");
+            throw new IllegalArgumentException("Invalid file type - content type is null");
         }
+
+        log.info("Validating file: name={}, size={}, contentType={}, type={}",
+                 file.getOriginalFilename(), file.getSize(), contentType, type);
+
         switch (type.toUpperCase()) {
             case "IMAGE":
                 if (!contentType.startsWith("image/")) {
-                    throw new IllegalArgumentException("Invalid image file");
+                    throw new IllegalArgumentException("Invalid image file - expected image/* but got " + contentType);
                 }
                 break;
             case "AUDIO":
                 if (!contentType.startsWith("audio/")) {
-                    throw new IllegalArgumentException("Invalid audio file");
+                    throw new IllegalArgumentException("Invalid audio file - expected audio/* but got " + contentType);
                 }
                 break;
             case "FILE":

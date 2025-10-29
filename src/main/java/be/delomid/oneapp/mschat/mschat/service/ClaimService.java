@@ -88,9 +88,8 @@ public class ClaimService {
         // Upload photos
         if (photos != null && !photos.isEmpty()) {
             for (int i = 0; i < photos.size(); i++) {
-
                 try {
-                    Map<String, Object> uploadResult  = fileService.uploadFile(photos.get(i), "IMAGE",claim.getReporter().getIdUsers());
+                    Map<String, Object> uploadResult = fileService.uploadFile(photos.get(i), "IMAGE", residentId);
                     String photoUrl = uploadResult.get("url").toString();
 
                     ClaimPhoto photo = new ClaimPhoto();
@@ -99,7 +98,7 @@ public class ClaimService {
                     photo.setPhotoOrder(i);
                     claimPhotoRepository.save(photo);
                 } catch (Exception e) {
-                    throw new RuntimeException("Failed to upload photo: " + e.getMessage());
+                    throw new RuntimeException("Failed to upload photo " + (i + 1) + ": " + e.getMessage(), e);
                 }
             }
         }
