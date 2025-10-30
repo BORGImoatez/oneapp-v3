@@ -1090,9 +1090,9 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
     final timeFormat = DateFormat('HH:mm');
 
     if (callDate == today) {
-      return \"Aujourd'hui à ${timeFormat.format(dateTime)}\";
+      return "Aujourd'hui à ${timeFormat.format(dateTime)}";
     } else if (callDate == yesterday) {
-      return \"Hier à ${timeFormat.format(dateTime)}\";
+      return "Hier à ${timeFormat.format(dateTime)}";
     } else {
       return DateFormat('dd/MM/yyyy à HH:mm').format(dateTime);
     }
