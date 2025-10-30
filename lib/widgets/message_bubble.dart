@@ -970,7 +970,7 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
     String statusText;
 
     if (callStatus == 'MISSED') {
-      callIcon = isMe ? Icons.phone_missed : Icons.phone_missed;
+      callIcon = Icons.phone_missed;
       iconColor = Colors.red;
       statusText = 'Appel manqué';
     } else if (callStatus == 'REJECTED') {
@@ -982,63 +982,71 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
       iconColor = Colors.red;
       statusText = 'Appel échoué';
     } else {
-      callIcon = isMe ? Icons.phone_callback : Icons.phone_in_talk;
+      callIcon = isMe ? Icons.call_made : Icons.call_received;
       iconColor = Colors.green;
-      statusText = 'Appel terminé';
+      statusText = isMe ? 'Appel passé' : 'Appel reçu';
     }
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            callIcon,
-            color: iconColor,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              statusText,
-              style: TextStyle(
-                color: (callStatus == 'MISSED' || callStatus == 'FAILED')
-                    ? Colors.red
-                    : (isMe ? Colors.white : AppTheme.textPrimary),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                callIcon,
+                color: iconColor,
+                size: 20,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              _formatCallTime(createdAt),
-              style: TextStyle(
-                color: isMe ? Colors.white70 : Colors.grey[600],
-                fontSize: 12,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: (callStatus == 'MISSED' || callStatus == 'FAILED')
+                          ? Colors.red
+                          : (isMe ? Colors.white : AppTheme.textPrimary),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatCallTime(createdAt),
+                    style: TextStyle(
+                      color: isMe ? Colors.white70 : Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (callData['durationSeconds'] != null &&
+                      callData['durationSeconds'] > 0) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDuration(callData['durationSeconds']),
+                      style: TextStyle(
+                        color: isMe ? Colors.white70 : Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (callData['durationSeconds'] != null &&
-                callData['durationSeconds'] > 0) ...[
-              const SizedBox(height: 2),
-              Text(
-                _formatDuration(callData['durationSeconds']),
-                style: TextStyle(
-                  color: isMe ? Colors.white70 : Colors.grey[600],
-                  fontSize: 12,
-                ),
-              ),
-            ],
           ],
         ),
-        const SizedBox(width: 12),
+        const SizedBox(height: 8),
         Material(
           color: Colors.green,
           borderRadius: BorderRadius.circular(20),
@@ -1046,21 +1054,21 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
             onTap: () => _handleRecall(context),
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.phone,
                     color: Colors.white,
-                    size: 16,
+                    size: 18,
                   ),
-                  SizedBox(width: 4),
+                  SizedBox(width: 6),
                   Text(
                     'Rappeler',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
