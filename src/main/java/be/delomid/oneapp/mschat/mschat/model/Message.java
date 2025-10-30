@@ -47,6 +47,9 @@ public class Message {
     @JoinColumn(name = "file_attachment_id")
     private FileAttachment fileAttachment;
 
+    @Column(name = "call_id")
+    private Long callId;
+
     @Builder.Default
     @Column(name = "is_edited")
     private Boolean isEdited = false;

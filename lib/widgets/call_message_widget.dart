@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/call_model.dart';
 import '../utils/app_theme.dart';
 
@@ -13,6 +14,23 @@ class CallMessageWidget extends StatelessWidget {
     required this.isOutgoing,
     required this.onCallBack,
   }) : super(key: key);
+
+  String _formatCallTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final callDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    final timeFormat = DateFormat('HH:mm');
+
+    if (callDate == today) {
+      return "Aujourd'hui à ${timeFormat.format(dateTime)}";
+    } else if (callDate == yesterday) {
+      return "Hier à ${timeFormat.format(dateTime)}";
+    } else {
+      return DateFormat('dd/MM/yyyy à HH:mm').format(dateTime);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,9 +99,17 @@ class CallMessageWidget extends StatelessWidget {
                 Text(
                   statusText,
                   style: TextStyle(
-                    color: Colors.grey[800],
+                    color: isMissed || isFailed ? Colors.red : Colors.grey[800],
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatCallTime(call.createdAt),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
                   ),
                 ),
                 if (call.durationSeconds != null &&

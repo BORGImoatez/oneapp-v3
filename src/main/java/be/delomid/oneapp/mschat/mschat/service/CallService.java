@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +23,7 @@ public class CallService {
     private final CallRepository callRepository;
     private final ChannelRepository channelRepository;
     private final ResidentRepository residentRepository;
+    private final MessageRepository messageRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
@@ -92,6 +95,10 @@ public class CallService {
         if (call.getStartedAt() != null) {
             Duration duration = Duration.between(call.getStartedAt(), call.getEndedAt());
             call.setDurationSeconds((int) duration.getSeconds());
+        } else {
+            // Si l'appel n'a jamais été répondu, c'est un appel manqué
+            call.setStatus(CallStatus.MISSED);
+            createCallMessage(call);
         }
 
         call = callRepository.save(call);
@@ -123,6 +130,9 @@ public class CallService {
         call.setStatus(CallStatus.REJECTED);
         call = callRepository.save(call);
 
+        // Créer un message d'appel manqué dans le canal
+        createCallMessage(call);
+
         CallDto callDto = convertToDto(call);
 
         messagingTemplate.convertAndSendToUser(
@@ -139,6 +149,56 @@ public class CallService {
         return calls.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    private void createCallMessage(Call call) {
+        try {
+            Message message = Message.builder()
+                    .channel(call.getChannel())
+                    .senderId(call.getCaller().getIdUsers())
+                    .content("Appel " + (call.getStatus() == CallStatus.MISSED ? "manqué" : "refusé"))
+                    .type(MessageType.CALL)
+                    .callId(call.getId())
+                    .isEdited(false)
+                    .isDeleted(false)
+                    .build();
+
+            messageRepository.save(message);
+
+            // Envoyer le message via WebSocket
+            be.delomid.oneapp.mschat.mschat.dto.MessageDto messageDto = be.delomid.oneapp.mschat.mschat.dto.MessageDto.builder()
+                    .id(message.getId())
+                    .channelId(message.getChannel().getId())
+                    .senderId(message.getSenderId())
+                    .senderFname(call.getCaller().getFname())
+                    .senderLname(call.getCaller().getLname())
+                    .senderPicture(PictureUrlUtil.normalizePictureUrl(call.getCaller().getPicture()))
+                    .content(message.getContent())
+                    .type(message.getType())
+                    .callData(buildCallData(call))
+                    .isEdited(message.getIsEdited())
+                    .isDeleted(message.getIsDeleted())
+                    .createdAt(message.getCreatedAt())
+                    .build();
+
+            messagingTemplate.convertAndSend("/topic/channel/" + call.getChannel().getId(), messageDto);
+        } catch (Exception e) {
+            // Log l'erreur mais ne pas faire échouer l'appel
+            System.err.println("Error creating call message: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> buildCallData(Call call) {
+        Map<String, Object> callData = new HashMap<>();
+        callData.put("callId", call.getId());
+        callData.put("status", call.getStatus().name());
+        callData.put("callerId", call.getCaller().getIdUsers());
+        callData.put("callerName", call.getCaller().getFname() + " " + call.getCaller().getLname());
+        callData.put("receiverId", call.getReceiver().getIdUsers());
+        callData.put("receiverName", call.getReceiver().getFname() + " " + call.getReceiver().getLname());
+        callData.put("durationSeconds", call.getDurationSeconds());
+        callData.put("createdAt", call.getCreatedAt());
+        return callData;
     }
 
     private CallDto convertToDto(Call call) {

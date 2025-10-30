@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,7 @@ public class MessageService {
     private final FileAttachmentRepository fileAttachmentRepository;
     private final ResidentBuildingRepository residentBuildingRepository;
     private final BuildingRepository buildingRepository;
+    private final CallRepository callRepository;
     private final NotificationService notificationService;
 
     @Transactional
@@ -300,6 +302,22 @@ public class MessageService {
 
         Resident sender = residentRepository.findById(message.getSenderId()).orElse(null);
 
+        Map<String, Object> callData = null;
+        if (message.getType() == MessageType.CALL && message.getCallId() != null) {
+            Call call = callRepository.findById(message.getCallId()).orElse(null);
+            if (call != null) {
+                callData = new HashMap<>();
+                callData.put("callId", call.getId());
+                callData.put("status", call.getStatus().name());
+                callData.put("callerId", call.getCaller().getIdUsers());
+                callData.put("callerName", call.getCaller().getFname() + " " + call.getCaller().getLname());
+                callData.put("receiverId", call.getReceiver().getIdUsers());
+                callData.put("receiverName", call.getReceiver().getFname() + " " + call.getReceiver().getLname());
+                callData.put("durationSeconds", call.getDurationSeconds());
+                callData.put("createdAt", call.getCreatedAt());
+            }
+        }
+
         return MessageDto.builder()
                 .id(message.getId())
                 .channelId(message.getChannel().getId())
@@ -311,6 +329,7 @@ public class MessageService {
                 .type(message.getType())
                 .replyToId(message.getReplyToId())
                 .fileAttachment(fileAttachmentDto)
+                .callData(callData)
                 .isEdited(message.getIsEdited())
                 .isDeleted(message.getIsDeleted())
                 .createdAt(message.getCreatedAt())

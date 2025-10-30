@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/call_model.dart';
 import '../../services/webrtc_service.dart';
 import '../../services/call_service.dart';
+import '../../providers/call_provider.dart';
 import '../../widgets/user_avatar.dart';
 
 class ActiveCallScreen extends StatefulWidget {
@@ -69,8 +71,8 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
       _timer?.cancel();
       _callStateSubscription?.cancel();
 
-      await _callService.endCall(widget.call.id!);
-      await widget.webrtcService.endCall();
+      final callProvider = Provider.of<CallProvider>(context, listen: false);
+      await callProvider.endCall();
 
       if (mounted) {
         Navigator.of(context).pop();

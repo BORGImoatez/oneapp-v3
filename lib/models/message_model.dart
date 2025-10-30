@@ -83,6 +83,7 @@ class Message {
   final String type;
   final int? replyToId;
   final FileAttachment? fileAttachment;
+  final Map<String, dynamic>? callData;
   final bool isEdited;
   final bool isDeleted;
   final DateTime createdAt;
@@ -100,6 +101,7 @@ class Message {
     required this.type,
     this.replyToId,
     this.fileAttachment,
+    this.callData,
     required this.isEdited,
     required this.isDeleted,
     required this.createdAt,
@@ -121,6 +123,7 @@ class Message {
       fileAttachment: json['fileAttachment'] != null
           ? FileAttachment.fromJson(json['fileAttachment'])
           : null,
+      callData: json['callData'],
       isEdited: json['isEdited'] ?? false,
       isDeleted: json['isDeleted'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
@@ -141,6 +144,7 @@ class Message {
       'type': type,
       'replyToId': replyToId,
       'fileAttachment': fileAttachment?.toJson(),
+      'callData': callData,
       'isEdited': isEdited,
       'isDeleted': isDeleted,
       'createdAt': createdAt.toIso8601String(),
@@ -159,6 +163,7 @@ class Message {
     String? type,
     int? replyToId,
     FileAttachment? fileAttachment,
+    Map<String, dynamic>? callData,
     bool? isEdited,
     bool? isDeleted,
     DateTime? createdAt,
@@ -176,6 +181,7 @@ class Message {
       type: type ?? this.type,
       replyToId: replyToId ?? this.replyToId,
       fileAttachment: fileAttachment ?? this.fileAttachment,
+      callData: callData ?? this.callData,
       isEdited: isEdited ?? this.isEdited,
       isDeleted: isDeleted ?? this.isDeleted,
       createdAt: createdAt ?? this.createdAt,

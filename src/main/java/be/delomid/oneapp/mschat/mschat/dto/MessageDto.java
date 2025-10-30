@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -19,6 +20,7 @@ public class MessageDto {
     private MessageType type;
     private Long replyToId;
     private FileAttachmentDto fileAttachment;
+    private Map<String, Object> callData;
     private Boolean isEdited;
     private Boolean isDeleted;
     private LocalDateTime createdAt;

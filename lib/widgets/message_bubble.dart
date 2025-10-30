@@ -175,6 +175,9 @@ class MessageBubble extends StatelessWidget {
       case 'MessageType.AUDIO':
       case 'AUDIO':
         return _buildAudioMessage();
+      case 'MessageType.CALL':
+      case 'CALL':
+        return _buildCallMessage(context);
       default:
         return Text(
           message.content,
@@ -941,6 +944,167 @@ class _AudioMessageWidgetState extends State<AudioMessageWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCallMessage(BuildContext context) {
+    if (message.callData == null) {
+      return Text(
+        message.content,
+        style: TextStyle(
+          color: isMe ? Colors.white : AppTheme.textPrimary,
+          fontSize: 16,
+        ),
+      );
+    }
+
+    final callData = message.callData!;
+    final callStatus = callData['status'] as String;
+    final createdAt = callData['createdAt'] != null
+        ? DateTime.parse(callData['createdAt'].toString())
+        : message.createdAt;
+
+    IconData callIcon;
+    Color iconColor;
+    String statusText;
+
+    if (callStatus == 'MISSED') {
+      callIcon = isMe ? Icons.phone_missed : Icons.phone_missed;
+      iconColor = Colors.red;
+      statusText = 'Appel manqué';
+    } else if (callStatus == 'REJECTED') {
+      callIcon = Icons.phone_disabled;
+      iconColor = Colors.orange;
+      statusText = 'Appel refusé';
+    } else if (callStatus == 'FAILED') {
+      callIcon = Icons.phone_disabled;
+      iconColor = Colors.red;
+      statusText = 'Appel échoué';
+    } else {
+      callIcon = isMe ? Icons.phone_callback : Icons.phone_in_talk;
+      iconColor = Colors.green;
+      statusText = 'Appel terminé';
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            callIcon,
+            color: iconColor,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              statusText,
+              style: TextStyle(
+                color: (callStatus == 'MISSED' || callStatus == 'FAILED')
+                    ? Colors.red
+                    : (isMe ? Colors.white : AppTheme.textPrimary),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _formatCallTime(createdAt),
+              style: TextStyle(
+                color: isMe ? Colors.white70 : Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+            if (callData['durationSeconds'] != null &&
+                callData['durationSeconds'] > 0) ...[
+              const SizedBox(height: 2),
+              Text(
+                _formatDuration(callData['durationSeconds']),
+                style: TextStyle(
+                  color: isMe ? Colors.white70 : Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(width: 12),
+        Material(
+          color: Colors.green,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            onTap: () => _handleRecall(context),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.phone,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Rappeler',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatCallTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final callDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+
+    final timeFormat = DateFormat('HH:mm');
+
+    if (callDate == today) {
+      return \"Aujourd'hui à ${timeFormat.format(dateTime)}\";
+    } else if (callDate == yesterday) {
+      return \"Hier à ${timeFormat.format(dateTime)}\";
+    } else {
+      return DateFormat('dd/MM/yyyy à HH:mm').format(dateTime);
+    }
+  }
+
+  String _formatDuration(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      return '${minutes}min ${remainingSeconds}s';
+    } else {
+      return '${seconds}s';
+    }
+  }
+
+  void _handleRecall(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Fonction de rappel en cours de développement'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
