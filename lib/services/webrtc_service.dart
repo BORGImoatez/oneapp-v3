@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:stomp_dart_client/stomp_dart_client.dart';
-import 'storage_service.dart';
+import 'websocket_service.dart';
 
 class WebRTCService {
   RTCPeerConnection? _peerConnection;
@@ -29,12 +29,12 @@ class WebRTCService {
     'video': false,
   };
 
-  StompClient? _stompClient;
+  WebSocketService? _webSocketService;
   String? _currentCallId;
   String? _remoteUserId;
 
-  Future<void> initialize(StompClient stompClient) async {
-    _stompClient = stompClient;
+  Future<void> initialize(WebSocketService webSocketService) async {
+    _webSocketService = webSocketService;
   }
 
   Future<void> startCall(String channelId, String remoteUserId) async {
@@ -149,15 +149,12 @@ class WebRTCService {
   }
 
   void _sendSignalingMessage(String type, Map<String, dynamic> data) {
-    if (_stompClient != null && _remoteUserId != null) {
-      _stompClient!.send(
-        destination: '/app/call.signal',
-        body: {
-          'type': type,
-          'channelId': _currentCallId,
-          'to': _remoteUserId,
-          'data': data,
-        }.toString(),
+    if (_webSocketService != null && _remoteUserId != null) {
+      _webSocketService!.sendCallSignal(
+        type,
+        _remoteUserId!,
+        data,
+        _currentCallId,
       );
     }
   }
@@ -184,12 +181,31 @@ class WebRTCService {
   }
 
   Future<void> _cleanup() async {
-    await _localStream?.dispose();
-    await _peerConnection?.close();
-    _localStream = null;
-    _peerConnection = null;
-    _currentCallId = null;
-    _remoteUserId = null;
+    try {
+      if (_localStream != null) {
+        for (var track in _localStream!.getTracks()) {
+          await track.stop();
+          track.dispose();
+        }
+        await _localStream!.dispose();
+        _localStream = null;
+      }
+
+      if (_peerConnection != null) {
+        await _peerConnection!.close();
+        await _peerConnection!.dispose();
+        _peerConnection = null;
+      }
+
+      _currentCallId = null;
+      _remoteUserId = null;
+    } catch (e) {
+      print('Error during cleanup: $e');
+      _localStream = null;
+      _peerConnection = null;
+      _currentCallId = null;
+      _remoteUserId = null;
+    }
   }
 
   void dispose() {

@@ -223,6 +223,8 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  WebSocketService get webSocketService => _wsService;
+
   Future<void> logout() async {
     _wsService.disconnect();
     BuildingContextService().clearBuildingContext();

@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/channel_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/vote_provider.dart';
+import '../providers/call_provider.dart';
 import '../services/building_context_service.dart';
 import '../utils/app_theme.dart';
 import 'home/home_screen.dart';
@@ -12,6 +13,7 @@ import 'channels/channels_screen.dart';
 import 'chat/discussions_screen.dart';
 import 'files/files_screen.dart';
 import 'settings/settings_screen.dart';
+import 'call/incoming_call_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -37,7 +39,30 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshDataForCurrentBuilding();
+      _setupCallListener();
     });
+  }
+
+  void _setupCallListener() {
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+    callProvider.addListener(() {
+      if (callProvider.currentCall != null && !callProvider.isInCall) {
+        _showIncomingCallScreen(callProvider.currentCall!);
+      }
+    });
+  }
+
+  void _showIncomingCallScreen(call) {
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => IncomingCallScreen(
+          call: call,
+          webrtcService: callProvider.webrtcService,
+        ),
+      ),
+    );
   }
 
   @override

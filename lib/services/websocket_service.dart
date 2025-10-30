@@ -18,6 +18,8 @@ class WebSocketService {
   // Callbacks
   Function(Message)? onMessageReceived;
   Function(String, String, bool)? onTypingReceived;
+  Function(Map<String, dynamic>)? onCallSignalReceived;
+  Function(Map<String, dynamic>)? onIncomingCall;
   Function()? onConnected;
   Function()? onDisconnected;
 
@@ -51,6 +53,7 @@ class WebSocketService {
   void _onConnect(StompFrame frame) {
     print('WebSocket connected');
     _isConnected = true;
+    _subscribeToCallSignals();
     onConnected?.call();
   }
 
@@ -186,4 +189,59 @@ class WebSocketService {
       _subscriptions.clear();
     }
   }
+
+  void _subscribeToCallSignals() {
+    if (!_isConnected || _stompClient == null) return;
+
+    // Subscribe to WebRTC signaling messages
+    _stompClient!.subscribe(
+      destination: '/user/queue/signal',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          try {
+            final signalData = jsonDecode(frame.body!);
+            print('Received call signal: ${signalData['type']}');
+            onCallSignalReceived?.call(signalData);
+          } catch (e) {
+            print('Error parsing call signal: $e');
+          }
+        }
+      },
+    );
+
+    // Subscribe to call notifications (incoming calls, call status updates)
+    _stompClient!.subscribe(
+      destination: '/user/queue/call',
+      callback: (StompFrame frame) {
+        if (frame.body != null) {
+          try {
+            final callData = jsonDecode(frame.body!);
+            print('Received call notification: ${callData['status']}');
+            onIncomingCall?.call(callData);
+          } catch (e) {
+            print('Error parsing call notification: $e');
+          }
+        }
+      },
+    );
+  }
+
+  void sendCallSignal(String type, String to, Map<String, dynamic> data, String? channelId) {
+    if (!_isConnected || _stompClient == null) return;
+
+    final signalData = {
+      'type': type,
+      'to': to,
+      'data': data,
+      if (channelId != null) 'channelId': channelId,
+    };
+
+    print('Sending call signal: $type to $to');
+    _stompClient!.send(
+      destination: '/app/call.signal',
+      body: jsonEncode(signalData),
+    );
+  }
+
+  StompClient? get stompClient => _stompClient;
 }

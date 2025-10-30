@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/call_provider.dart';
 import '../utils/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -47,11 +48,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   void _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 3));
-    
+
     if (mounted) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+      final callProvider = Provider.of<CallProvider>(context, listen: false);
+
       if (authProvider.isAuthenticated) {
+        callProvider.initialize(authProvider.webSocketService);
         Navigator.of(context).pushReplacementNamed('/main');
       } else {
         Navigator.of(context).pushReplacementNamed('/login');

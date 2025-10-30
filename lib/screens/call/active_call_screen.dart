@@ -66,12 +66,17 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
 
   Future<void> _endCall() async {
     try {
-      await widget.webrtcService.endCall();
+      _timer?.cancel();
+      _callStateSubscription?.cancel();
+
       await _callService.endCall(widget.call.id!);
+      await widget.webrtcService.endCall();
+
       if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      print('Error ending call: $e');
       if (mounted) {
         Navigator.of(context).pop();
       }
