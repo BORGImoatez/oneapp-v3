@@ -25,6 +25,7 @@ public class CallService {
     private final ResidentRepository residentRepository;
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final org.springframework.messaging.simp.user.SimpUserRegistry simpUserRegistry;
 
     @Transactional
     public CallDto initiateCall(String callerId, Long channelId, String receiverId) {
@@ -52,6 +53,24 @@ public class CallService {
         System.out.println("Channel ID: " + channelId);
         System.out.println("Sending call notification to destination: /user/" + receiverId + "/queue/call");
         System.out.println("Call DTO status: " + callDto.getStatus());
+
+        // Log connected users
+        System.out.println("--- Connected WebSocket Users ---");
+        simpUserRegistry.getUsers().forEach(user -> {
+            System.out.println("User: " + user.getName() + " | Sessions: " + user.getSessions().size());
+            user.getSessions().forEach(session -> {
+                System.out.println("  Session ID: " + session.getId());
+            });
+        });
+        System.out.println("--- Total connected users: " + simpUserRegistry.getUserCount() + " ---");
+
+        // Check if receiver is connected
+        var receiverUser = simpUserRegistry.getUser(receiverId);
+        if (receiverUser != null) {
+            System.out.println("✓ Receiver IS connected with " + receiverUser.getSessions().size() + " session(s)");
+        } else {
+            System.out.println("✗ Receiver NOT found in connected users!");
+        }
 
         try {
             messagingTemplate.convertAndSendToUser(
