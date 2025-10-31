@@ -20,10 +20,15 @@ class CallProvider with ChangeNotifier {
   List<CallModel> get callHistory => _callHistory;
   WebRTCService get webrtcService => _webrtcService;
 
-  void initialize(WebSocketService webSocketService) {
-    _webrtcService.initialize(webSocketService);
-    webSocketService.onCallSignalReceived = _handleCallSignal;
+  void initialize(WebSocketService webSocketService) async {
+    // Initialiser WebRTC avec WebSocket
+    await _webrtcService.initialize(webSocketService);
+
+    // Le WebRTCService gère déjà onCallSignalReceived
+    // On écoute juste les notifications d'appel
     webSocketService.onIncomingCall = _handleIncomingCall;
+
+    print('CallProvider initialized');
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
@@ -52,32 +57,6 @@ class CallProvider with ChangeNotifier {
     }
   }
 
-  void _handleCallSignal(Map<String, dynamic> signal) async {
-    try {
-      final type = signal['type'];
-      final data = signal['data'];
-
-      print('Handling call signal: $type');
-
-      switch (type) {
-        case 'offer':
-          await _webrtcService.handleOffer(data['sdp']);
-          break;
-        case 'answer':
-          await _webrtcService.handleAnswer(data['sdp']);
-          await _stopRingtone();
-          break;
-        case 'ice-candidate':
-          await _webrtcService.handleIceCandidate(data['candidate']);
-          break;
-        case 'end-call':
-          await endCall();
-          break;
-      }
-    } catch (e) {
-      print('Error handling call signal: $e');
-    }
-  }
 
   Future<void> _playRingtone() async {
     if (_isRingtonePlaying) return;
@@ -136,15 +115,20 @@ class CallProvider with ChangeNotifier {
     try {
       await _stopRingtone();
 
+      // 1. Notifier le serveur qu'on répond
       final updatedCall = await _callService.answerCall(call.id!);
 
       _currentCall = updatedCall;
       _isInCall = true;
 
+      // 2. Préparer le PeerConnection pour recevoir l'offre
       await _webrtcService.answerCall(
         call.channelId.toString(),
         call.callerId,
       );
+
+      // 3. Le WebRTCService va maintenant écouter et traiter l'offre automatiquement
+      print('Ready to receive WebRTC offer from ${call.callerId}');
 
       notifyListeners();
     } catch (e) {

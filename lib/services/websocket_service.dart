@@ -57,6 +57,13 @@ class WebSocketService {
     onConnected?.call();
   }
 
+  // Permet de s'abonner aux signaux même si déjà connecté
+  void ensureCallSignalsSubscription() {
+    if (_isConnected) {
+      _subscribeToCallSignals();
+    }
+  }
+
   void _onDisconnect(StompFrame frame) {
     print('WebSocket disconnected');
     _isConnected = false;

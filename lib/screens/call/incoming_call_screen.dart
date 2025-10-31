@@ -72,7 +72,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   Future<void> _answerCall() async {
     try {
       await _stopRinging();
+
+      // Notifier le serveur qu'on répond
       await _callService.answerCall(widget.call.id!);
+
+      // Préparer le PeerConnection (ne crée pas l'offre, attend de la recevoir)
       await widget.webrtcService.answerCall(
         widget.call.channelId.toString(),
         widget.call.callerId,
@@ -90,6 +94,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
         );
       }
     } catch (e) {
+      print('Error in _answerCall: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Erreur lors de la réponse à l\'appel')),
