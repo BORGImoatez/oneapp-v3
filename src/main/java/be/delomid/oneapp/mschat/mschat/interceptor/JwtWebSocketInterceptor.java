@@ -41,8 +41,9 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
                     String buildingId = jwtConfig.extractBuildingId(token);
 
                     if (jwtConfig.validateToken(token, email)) {
-                        accessor.setUser(new JwtPrincipal(userId != null ? userId : email, email, buildingId));
-                        log.debug("WebSocket connection authenticated for user: {} in building: {}", userId, buildingId);
+                        String principalName = userId != null ? userId : email;
+                        accessor.setUser(new JwtPrincipal(principalName, email, buildingId));
+                        log.info("WebSocket connection authenticated - Principal name (userId): {} | Email: {} | Building: {}", principalName, email, buildingId);
                     } else {
                         log.error("Invalid JWT token for WebSocket connection");
                         return null;

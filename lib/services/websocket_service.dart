@@ -198,12 +198,18 @@ class WebSocketService {
   }
 
   void _subscribeToCallSignals() {
-    if (!_isConnected || _stompClient == null) return;
+    if (!_isConnected || _stompClient == null) {
+      print('Cannot subscribe to call signals: not connected or client is null');
+      return;
+    }
+
+    print('Subscribing to call signals...');
 
     // Subscribe to WebRTC signaling messages
     _stompClient!.subscribe(
       destination: '/user/queue/signal',
       callback: (StompFrame frame) {
+        print('Received frame on /user/queue/signal');
         if (frame.body != null) {
           try {
             final signalData = jsonDecode(frame.body!);
@@ -215,11 +221,13 @@ class WebSocketService {
         }
       },
     );
+    print('Successfully subscribed to /user/queue/signal');
 
     // Subscribe to call notifications (incoming calls, call status updates)
     _stompClient!.subscribe(
       destination: '/user/queue/call',
       callback: (StompFrame frame) {
+        print('Received frame on /user/queue/call');
         if (frame.body != null) {
           try {
             final callData = jsonDecode(frame.body!);
@@ -231,6 +239,7 @@ class WebSocketService {
         }
       },
     );
+    print('Successfully subscribed to /user/queue/call');
   }
 
   void sendCallSignal(String type, String to, Map<String, dynamic> data, String? channelId) {

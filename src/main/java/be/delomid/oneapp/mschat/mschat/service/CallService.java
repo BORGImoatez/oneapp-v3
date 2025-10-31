@@ -46,11 +46,14 @@ public class CallService {
 
         CallDto callDto = convertToDto(call);
 
+        System.out.println("Sending call notification to receiverId: " + receiverId);
+        System.out.println("Call DTO: " + callDto);
         messagingTemplate.convertAndSendToUser(
                 receiverId,
                 "/queue/call",
                 callDto
         );
+        System.out.println("Call notification sent successfully");
 
         return callDto;
     }
