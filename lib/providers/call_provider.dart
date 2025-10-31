@@ -21,14 +21,21 @@ class CallProvider with ChangeNotifier {
   WebRTCService get webrtcService => _webrtcService;
 
   void initialize(WebSocketService webSocketService) async {
+    print('CallProvider: Starting initialization...');
+
+    // Enregistrer le callback AVANT d'initialiser WebRTC
+    webSocketService.onIncomingCall = _handleIncomingCall;
+    print('CallProvider: onIncomingCall callback registered');
+
     // Initialiser WebRTC avec WebSocket
     await _webrtcService.initialize(webSocketService);
+    print('CallProvider: WebRTC service initialized');
 
-    // Le WebRTCService gère déjà onCallSignalReceived
-    // On écoute juste les notifications d'appel
-    webSocketService.onIncomingCall = _handleIncomingCall;
+    // Re-souscrire aux signaux d'appel pour s'assurer que le callback est actif
+    webSocketService.ensureCallSignalsSubscription();
+    print('CallProvider: Call signals subscription ensured');
 
-    print('CallProvider initialized');
+    print('CallProvider initialized successfully');
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
