@@ -60,10 +60,14 @@ class WebSocketService {
   }
 
   void _onConnect(StompFrame frame) {
-    print('WebSocket connected');
+    print('=== WebSocket CONNECTED ===');
+    print('Frame command: ${frame.command}');
     _isConnected = true;
+    print('About to subscribe to call signals...');
     _subscribeToCallSignals();
+    print('Call signals subscription completed');
     onConnected?.call();
+    print('=== WebSocket connection setup completed ===');
   }
 
   // Permet de s'abonner aux signaux même si déjà connecté
