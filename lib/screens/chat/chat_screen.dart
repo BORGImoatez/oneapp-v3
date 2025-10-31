@@ -314,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
       String? receiverId;
       for (var member in members) {
-        if (member['userId'] != authProvider.user?.idUsers) {
+        if (member['userId'] != authProvider.user?.id) {
           receiverId = member['userId'];
           break;
         }

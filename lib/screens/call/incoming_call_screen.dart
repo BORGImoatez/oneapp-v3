@@ -145,8 +145,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                   return Transform.scale(
                     scale: _scaleAnimation.value,
                     child: UserAvatar(
-                      imageUrl: widget.call.callerAvatar,
-                      name: widget.call.callerName,
+                      profilePictureUrl: widget.call.callerAvatar,
+                      firstName: widget.call.callerName,
+                      lastName: '',
                       radius: 70,
                     ),
                   );

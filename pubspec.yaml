@@ -45,8 +45,8 @@ dependencies:
   audioplayers: ^5.2.1
 
   # WebRTC & Calling
-  flutter_webrtc: ^0.9.48
-  vibration: ^1.8.4
+  flutter_webrtc: ^1.2.0
+  vibration: ^3.1.4
 
   # Utils
   intl: ^0.18.1

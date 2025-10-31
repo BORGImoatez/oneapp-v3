@@ -1,11 +1,6 @@
 package be.delomid.oneapp.mschat.mschat.service;
 
-import be.delomid.oneapp.mschat.mschat.dto.ChannelDto;
-import be.delomid.oneapp.mschat.mschat.dto.CreateChannelRequest;
-import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
-import be.delomid.oneapp.mschat.mschat.dto.PublicChannelDetailsDto;
-import be.delomid.oneapp.mschat.mschat.dto.PublicChannelWithMessagesDto;
-import be.delomid.oneapp.mschat.mschat.dto.ResidentDto;
+import be.delomid.oneapp.mschat.mschat.dto.*;
 import be.delomid.oneapp.mschat.mschat.interceptor.JwtWebSocketInterceptor;
 import be.delomid.oneapp.mschat.mschat.exception.ChannelNotFoundException;
 import be.delomid.oneapp.mschat.mschat.exception.UnauthorizedAccessException;

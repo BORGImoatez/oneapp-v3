@@ -127,8 +127,9 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
               ),
               const Spacer(),
               UserAvatar(
-                imageUrl: otherPersonAvatar,
-                name: otherPerson,
+                profilePictureUrl: otherPersonAvatar,
+                firstName: otherPerson,
+                lastName: '',
                 radius: 60,
               ),
               const SizedBox(height: 24),
