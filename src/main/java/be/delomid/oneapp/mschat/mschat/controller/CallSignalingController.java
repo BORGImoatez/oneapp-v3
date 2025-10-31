@@ -23,15 +23,20 @@ public class CallSignalingController {
             Object data = message.get("data");
 
             log.info("Received signaling message: type={}, to={}", type, to);
+            log.info("Sending signal to user: {} at destination: /user/{}/queue/signal", to, to);
+
+            Map<String, Object> signalMessage = Map.of(
+                    "type", type,
+                    "data", data
+            );
 
             messagingTemplate.convertAndSendToUser(
                     to,
                     "/queue/signal",
-                    Map.of(
-                            "type", type,
-                            "data", data
-                    )
+                    signalMessage
             );
+
+            log.info("Signal sent successfully to user: {}", to);
         } catch (Exception e) {
             log.error("Error handling signaling message", e);
         }
