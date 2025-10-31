@@ -26,10 +26,18 @@ class WebSocketService {
   bool get isConnected => _isConnected;
 
   Future<void> connect() async {
-    if (_isConnected) return;
+    if (_isConnected) {
+      print('WebSocket already connected, skipping connection');
+      return;
+    }
 
     final token = await StorageService.getToken();
-    if (token == null) return;
+    if (token == null) {
+      print('ERROR: No token available for WebSocket connection');
+      return;
+    }
+
+    print('Attempting to connect WebSocket to ${Constants.wsUrl}...');
 
     _stompClient = StompClient(
       config: StompConfig(
@@ -48,6 +56,7 @@ class WebSocketService {
     );
 
     _stompClient!.activate();
+    print('WebSocket activation initiated');
   }
 
   void _onConnect(StompFrame frame) {
