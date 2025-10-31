@@ -46,14 +46,25 @@ public class CallService {
 
         CallDto callDto = convertToDto(call);
 
-        System.out.println("Sending call notification to receiverId: " + receiverId);
-        System.out.println("Call DTO: " + callDto);
-        messagingTemplate.convertAndSendToUser(
-                receiverId,
-                "/queue/call",
-                callDto
-        );
-        System.out.println("Call notification sent successfully");
+        System.out.println("=== CALL INITIATION DEBUG ===");
+        System.out.println("Caller ID: " + callerId);
+        System.out.println("Receiver ID: " + receiverId);
+        System.out.println("Channel ID: " + channelId);
+        System.out.println("Sending call notification to destination: /user/" + receiverId + "/queue/call");
+        System.out.println("Call DTO status: " + callDto.getStatus());
+
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    receiverId,
+                    "/queue/call",
+                    callDto
+            );
+            System.out.println("Call notification sent successfully via WebSocket");
+        } catch (Exception e) {
+            System.err.println("ERROR sending call notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("=== END CALL INITIATION DEBUG ===");
 
         return callDto;
     }
