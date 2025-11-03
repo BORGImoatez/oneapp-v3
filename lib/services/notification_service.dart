@@ -187,15 +187,20 @@ class NotificationService {
 
     try {
       final callData = {
-        'id': int.parse(message.data['callId']),
-        'callerId': message.data['callerId'],
-        'callerName': message.data['callerName'],
-        'callerAvatar': message.data['callerAvatar'],
-        'channelId': int.parse(message.data['channelId']),
+        'id': int.parse(message.data['callId'] ?? '0'),
+        'callerId': message.data['callerId'] ?? '',
+        'callerName': message.data['callerName'] ?? 'Inconnu',
+        'callerAvatar': message.data['callerAvatar'] ?? '',
+        'channelId': int.parse(message.data['channelId'] ?? '0'),
         'status': 'INITIATED',
       };
 
       print('Parsed call data: $callData');
+
+      if (callData['id'] == 0 || callData['channelId'] == 0) {
+        print('ERROR: Invalid call data (missing callId or channelId)');
+        return;
+      }
 
       if (onIncomingCallReceived != null) {
         print('Calling onIncomingCallReceived callback');
@@ -203,8 +208,9 @@ class NotificationService {
       } else {
         print('WARNING: onIncomingCallReceived callback is not set!');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error handling incoming call: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 }

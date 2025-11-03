@@ -193,6 +193,14 @@ Ringtone playing
 2. Le canal de notification `incoming_call_channel` existe
 3. La priorité de la notification est MAX
 
+### Problème : "type 'Null' is not a subtype of type 'String'"
+**Solution :**
+Ce problème arrive quand les données FCM sont incomplètes. Le système gère maintenant automatiquement :
+- Les valeurs nulles avec des valeurs par défaut (`?? ''`)
+- Construction manuelle du CallModel au lieu d'utiliser `fromJson()`
+- Récupération automatique des infos du receveur depuis `StorageService.getUser()`
+- Validation des données essentielles (callId et channelId non nuls)
+
 ## Améliorations futures possibles
 
 1. **Full-screen intent** : Afficher l'écran d'appel directement même si l'écran est verrouillé

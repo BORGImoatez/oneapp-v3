@@ -4,6 +4,7 @@ import '../services/call_service.dart';
 import '../services/webrtc_service.dart';
 import '../services/websocket_service.dart';
 import '../services/notification_service.dart';
+import '../services/storage_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class CallProvider with ChangeNotifier {
@@ -115,13 +116,34 @@ class CallProvider with ChangeNotifier {
         return;
       }
 
-      final call = CallModel.fromJson(callData);
+      // Récupérer l'utilisateur actuel pour les infos du receveur
+      final currentUser = StorageService.getUser();
+      if (currentUser == null) {
+        print('CallProvider: No current user found, cannot process incoming call');
+        return;
+      }
+
+      // Construire le CallModel avec les données FCM
+      final call = CallModel(
+        id: callData['id'],
+        channelId: callData['channelId'],
+        callerId: callData['callerId'],
+        callerName: callData['callerName'],
+        callerAvatar: callData['callerAvatar'],
+        receiverId: currentUser.id,
+        receiverName: '${currentUser.firstName} ${currentUser.lastName}',
+        receiverAvatar: currentUser.pictureUrl,
+        status: callData['status'],
+        createdAt: DateTime.now(),
+      );
+
       print('CallProvider: New incoming call from FCM: ${call.callerId}');
       _currentCall = call;
       _playRingtoneIncome();
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('CallProvider: Error handling incoming call from FCM: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 
