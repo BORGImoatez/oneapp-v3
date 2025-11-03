@@ -89,4 +89,9 @@ class MGIApp extends StatelessWidget {
 Future<void> handleBackgroundMessage(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print('Background message: ${message.notification?.title}');
+
+  final type = message.data['type'];
+  if (type == 'INCOMING_CALL') {
+    print('Incoming call received in background: ${message.data}');
+  }
 }

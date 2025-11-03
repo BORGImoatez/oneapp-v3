@@ -28,6 +28,7 @@ public class CallService {
     private final SimpMessagingTemplate messagingTemplate;
     private final org.springframework.messaging.simp.user.SimpUserRegistry simpUserRegistry;
     private final NotificationService notificationService;
+    private final FCMService fcmService;
 
     @Transactional
     public CallDto initiateCall(String callerId, Long channelId, String receiverId) {
@@ -85,6 +86,29 @@ public class CallService {
             System.err.println("ERROR sending call notification: " + e.getMessage());
             e.printStackTrace();
         }
+
+        // Envoyer également une notification FCM comme fallback
+        try {
+            String receiverFcmToken = receiver.getFcmToken();
+            if (receiverFcmToken != null && !receiverFcmToken.isEmpty()) {
+                System.out.println("Sending FCM notification to receiver token: " + receiverFcmToken);
+                fcmService.sendIncomingCallNotification(
+                        receiverFcmToken,
+                        callerId,
+                        caller.getFname() + " " + caller.getLname(),
+                        PictureUrlUtil.normalizePictureUrl(caller.getPicture()),
+                        call.getId(),
+                        channelId
+                );
+                System.out.println("FCM notification sent successfully");
+            } else {
+                System.out.println("Receiver has no FCM token, skipping FCM notification");
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR sending FCM notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         System.out.println("=== END CALL INITIATION DEBUG ===");
 
         return callDto;

@@ -12,6 +12,7 @@ class NotificationService {
   final ApiService _apiService = ApiService();
   String? _fcmToken;
   Function()? onNotificationReceived;
+  Function(Map<String, dynamic>)? onIncomingCallReceived;
 
   String? get fcmToken => _fcmToken;
 
@@ -41,9 +42,16 @@ class NotificationService {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Foreground message: ${message.notification?.title}');
-      _showLocalNotification(message);
-      if (onNotificationReceived != null) {
-        onNotificationReceived!();
+      final type = message.data['type'];
+
+      if (type == 'INCOMING_CALL') {
+        print('Incoming call notification received in foreground');
+        _handleIncomingCall(message);
+      } else {
+        _showLocalNotification(message);
+        if (onNotificationReceived != null) {
+          onNotificationReceived!();
+        }
       }
     });
   }
@@ -94,9 +102,22 @@ class NotificationService {
       showBadge: true,
     );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+    const incomingCallChannel = AndroidNotificationChannel(
+      'incoming_call_channel',
+      'Appels entrants',
+      description: 'Canal pour les appels entrants',
+      importance: Importance.max,
+      playSound: true,
+      showBadge: true,
+      enableVibration: true,
+      enableLights: true,
+    );
+
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(androidChannel);
+    await androidPlugin?.createNotificationChannel(incomingCallChannel);
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
@@ -143,7 +164,9 @@ class NotificationService {
   void _handleNotificationTap(RemoteMessage message) {
     final notificationType = message.data['type'];
 
-    if (notificationType == 'CHANNEL_CREATED') {
+    if (notificationType == 'INCOMING_CALL') {
+      _handleIncomingCall(message);
+    } else if (notificationType == 'CHANNEL_CREATED') {
       String? channelId = message.data['channelId'];
       if (channelId != null) {
         print('Navigate to channel: $channelId');
@@ -155,6 +178,33 @@ class NotificationService {
       if (claimId != null) {
         print('Navigate to claim: $claimId');
       }
+    }
+  }
+
+  void _handleIncomingCall(RemoteMessage message) {
+    print('=== HANDLING INCOMING CALL FROM FCM ===');
+    print('Call data: ${message.data}');
+
+    try {
+      final callData = {
+        'id': int.parse(message.data['callId']),
+        'callerId': message.data['callerId'],
+        'callerName': message.data['callerName'],
+        'callerAvatar': message.data['callerAvatar'],
+        'channelId': int.parse(message.data['channelId']),
+        'status': 'INITIATED',
+      };
+
+      print('Parsed call data: $callData');
+
+      if (onIncomingCallReceived != null) {
+        print('Calling onIncomingCallReceived callback');
+        onIncomingCallReceived!(callData);
+      } else {
+        print('WARNING: onIncomingCallReceived callback is not set!');
+      }
+    } catch (e) {
+      print('Error handling incoming call: $e');
     }
   }
 }

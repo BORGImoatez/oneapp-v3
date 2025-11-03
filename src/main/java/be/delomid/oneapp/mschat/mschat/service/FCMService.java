@@ -103,6 +103,52 @@ public class FCMService {
         }
     }
 
+    public void sendIncomingCallNotification(String fcmToken, String callerId, String callerName, String callerAvatar, Long callId, Long channelId) {
+        if (fcmToken == null || fcmToken.isEmpty()) {
+            log.warn("FCM token is empty, skipping incoming call notification");
+            return;
+        }
+
+        try {
+            Message message = Message.builder()
+                    .setToken(fcmToken)
+                    .setNotification(Notification.builder()
+                            .setTitle("Appel entrant")
+                            .setBody(callerName + " vous appelle")
+                            .build())
+                    .putData("type", "INCOMING_CALL")
+                    .putData("callId", callId.toString())
+                    .putData("callerId", callerId)
+                    .putData("callerName", callerName)
+                    .putData("callerAvatar", callerAvatar != null ? callerAvatar : "")
+                    .putData("channelId", channelId.toString())
+                    .setAndroidConfig(AndroidConfig.builder()
+                            .setPriority(AndroidConfig.Priority.HIGH)
+                            .setNotification(AndroidNotification.builder()
+                                    .setSound("default")
+                                    .setChannelId("incoming_call_channel")
+                                    .setPriority(AndroidNotification.Priority.MAX)
+                                    .setVisibility(AndroidNotification.Visibility.PUBLIC)
+                                    .build())
+                            .build())
+                    .setApnsConfig(ApnsConfig.builder()
+                            .putHeader("apns-priority", "10")
+                            .putHeader("apns-push-type", "alert")
+                            .setAps(Aps.builder()
+                                    .setContentAvailable(true)
+                                    .setSound("default")
+                                    .setBadge(1)
+                                    .build())
+                            .build())
+                    .build();
+
+            String response = FirebaseMessaging.getInstance().send(message);
+            log.info("Successfully sent incoming call notification: {}", response);
+        } catch (Exception e) {
+            log.error("Error sending incoming call notification to token {}: {}", fcmToken, e.getMessage());
+        }
+    }
+
     public void sendNotificationToMultipleTokens(List<String> fcmTokens, String title, String body, String channelId) {
         if (fcmTokens == null || fcmTokens.isEmpty()) {
             log.warn("FCM tokens list is empty, skipping notifications");

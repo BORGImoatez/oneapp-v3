@@ -3,6 +3,7 @@ import '../models/call_model.dart';
 import '../services/call_service.dart';
 import '../services/webrtc_service.dart';
 import '../services/websocket_service.dart';
+import '../services/notification_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class CallProvider with ChangeNotifier {
@@ -32,6 +33,10 @@ class CallProvider with ChangeNotifier {
 
     // Enregistrer les callbacks d'appel
     _registerCallCallbacks();
+
+    // Enregistrer le callback FCM pour les appels entrants
+    NotificationService().onIncomingCallReceived = _handleIncomingCallFromFCM;
+    print('CallProvider: FCM incoming call callback registered');
 
     // Initialiser WebRTC avec WebSocket
     await _webrtcService.initialize(_webSocketService!);
@@ -72,7 +77,7 @@ class CallProvider with ChangeNotifier {
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
     try {
-      print('CallProvider: Received incoming call notification: ${callData['status']}');
+      print('CallProvider: Received incoming call notification (WebSocket): ${callData['status']}');
       final call = CallModel.fromJson(callData);
 
       if (call.status == 'INITIATED' && _currentCall == null) {
@@ -87,7 +92,6 @@ class CallProvider with ChangeNotifier {
             _stopRingtone();
             _currentCall = null;
             _isInCall = false;
-            // Réenregistrer les callbacks pour le prochain appel
             _ensureCallbacksRegistered();
           } else if (call.status == 'ANSWERED') {
             print('CallProvider: Call answered');
@@ -99,6 +103,25 @@ class CallProvider with ChangeNotifier {
       }
     } catch (e) {
       print('CallProvider: Error handling incoming call: $e');
+    }
+  }
+
+  void _handleIncomingCallFromFCM(Map<String, dynamic> callData) {
+    try {
+      print('CallProvider: Received incoming call notification (FCM): $callData');
+
+      if (_currentCall != null) {
+        print('CallProvider: Call already in progress, ignoring FCM notification');
+        return;
+      }
+
+      final call = CallModel.fromJson(callData);
+      print('CallProvider: New incoming call from FCM: ${call.callerId}');
+      _currentCall = call;
+      _playRingtoneIncome();
+      notifyListeners();
+    } catch (e) {
+      print('CallProvider: Error handling incoming call from FCM: $e');
     }
   }
 
