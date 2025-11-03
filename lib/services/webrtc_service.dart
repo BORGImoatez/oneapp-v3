@@ -35,7 +35,13 @@ class WebRTCService {
   bool _isInitialized = false;
 
   Future<void> initialize(WebSocketService webSocketService) async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      print('WebRTCService already initialized, re-registering callbacks');
+      // Même si déjà initialisé, on réenregistre les callbacks
+      _webSocketService!.onCallSignalReceived = _handleIncomingSignal;
+      _webSocketService!.ensureCallSignalsSubscription();
+      return;
+    }
 
     _webSocketService = webSocketService;
 
@@ -260,6 +266,8 @@ class WebRTCService {
 
       _currentCallId = null;
       _remoteUserId = null;
+
+      print('WebRTCService cleaned up and ready for next call');
     } catch (e) {
       print('Error during cleanup: $e');
       _localStream = null;
@@ -277,6 +285,8 @@ class WebRTCService {
     _remoteStreamController.close();
     _callStateController.close();
     _isInitialized = false;
+    _webSocketService = null;
+    print('WebRTCService fully disposed');
   }
 }
 
