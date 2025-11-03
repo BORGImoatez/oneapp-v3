@@ -26,15 +26,6 @@ public class JwtWebSocketInterceptor implements ChannelInterceptor {
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // Log all commands to debug
-        if (accessor != null && accessor.getCommand() != null) {
-            Principal user = accessor.getUser();
-            log.debug("STOMP Command: {} | User: {} | Destination: {}",
-                accessor.getCommand(),
-                user != null ? user.getName() : "null",
-                accessor.getDestination());
-        }
-
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             List<String> authorization = accessor.getNativeHeader("Authorization");
 

@@ -45,6 +45,8 @@ class CallProvider with ChangeNotifier {
 
       if (call.status == 'INITIATED' && _currentCall == null) {
         _currentCall = call;
+        _playRingtoneIncome(); // 🔔 pour appel entrant
+
         notifyListeners();
       } else if (call.status == 'ANSWERED' || call.status == 'ENDED' || call.status == 'REJECTED') {
         if (_currentCall?.id == call.id) {
@@ -64,7 +66,18 @@ class CallProvider with ChangeNotifier {
     }
   }
 
+  Future<void> _playRingtoneIncome() async {
+    if (_isRingtonePlaying) return;
 
+    try {
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      await _audioPlayer.play(UrlSource('https://soft-verse.com/son/nokia_remix.mp3'));
+      _isRingtonePlaying = true;
+      print('Ringtone playing');
+    } catch (e) {
+      print('Error playing ringtone: $e');
+    }
+  }
   Future<void> _playRingtone() async {
     if (_isRingtonePlaying) return;
 

@@ -1,4 +1,10 @@
-t.mschat.util.PictureUrlUtil;
+package be.delomid.oneapp.mschat.mschat.service;
+
+import be.delomid.oneapp.mschat.mschat.dto.CallDto;
+import be.delomid.oneapp.mschat.mschat.dto.MessageDto;
+import be.delomid.oneapp.mschat.mschat.model.*;
+import be.delomid.oneapp.mschat.mschat.repository.*;
+import be.delomid.oneapp.mschat.mschat.util.PictureUrlUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -21,6 +27,7 @@ public class CallService {
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final org.springframework.messaging.simp.user.SimpUserRegistry simpUserRegistry;
+    private final NotificationService notificationService;
 
     @Transactional
     public CallDto initiateCall(String callerId, Long channelId, String receiverId) {
@@ -163,6 +170,7 @@ public class CallService {
 
         CallDto callDto = convertToDto(call);
 
+
         messagingTemplate.convertAndSendToUser(
                 call.getCaller().getIdUsers(),
                 "/queue/call",
@@ -192,9 +200,18 @@ public class CallService {
                     .build();
 
             messageRepository.save(message);
-
+            notificationService.createNotification(
+                    call.getReceiver().getIdUsers(),
+                    call.getChannel().getBuildingId(),
+                    "Appel manqué",
+                    "Vous avez manqué un appel de :"+ call.getCaller().getFname() +" "+ call.getCaller().getLname(),
+                    "MESSAGE",
+                    call.getChannel().getId(),
+                    null,
+                    null
+            );
             // Envoyer le message via WebSocket
-            be.delomid.oneapp.mschat.mschat.dto.MessageDto messageDto = be.delomid.oneapp.mschat.mschat.dto.MessageDto.builder()
+        MessageDto messageDto = MessageDto.builder()
                     .id(message.getId())
                     .channelId(message.getChannel().getId())
                     .senderId(message.getSenderId())

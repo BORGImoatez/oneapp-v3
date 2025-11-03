@@ -216,12 +216,10 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> _connectWebSocket() async {
-    print('AuthProvider: Attempting to connect WebSocket...');
     try {
       await _wsService.connect();
-      print('AuthProvider: WebSocket connection completed');
     } catch (e) {
-      print('AuthProvider: Failed to connect WebSocket: $e');
+      print('Failed to connect WebSocket: $e');
     }
   }
 
