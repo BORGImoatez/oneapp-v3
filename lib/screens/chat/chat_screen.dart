@@ -8,6 +8,7 @@ import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/call_provider.dart';
 import '../../providers/channel_provider.dart';
+import '../../providers/claim_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../../models/channel_model.dart';
@@ -20,8 +21,9 @@ import 'shared_media_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final Channel channel;
+  final int? claimId;
 
-  const ChatScreen({super.key, required this.channel});
+  const ChatScreen({super.key, required this.channel, this.claimId});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -389,6 +391,12 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: Colors.white,
       elevation: 1,
       actions: [
+        if (widget.claimId != null && !widget.channel.isClosed)
+          IconButton(
+            onPressed: _showCloseClaimDialog,
+            icon: const Icon(Icons.check_circle_outline, color: Colors.red),
+            tooltip: 'Clôturer le sinistre',
+          ),
         if (widget.channel.type == 'ONE_TO_ONE')
           IconButton(
             onPressed: _initiateCall,
@@ -409,7 +417,7 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(Icons.photo_library_outlined),
           tooltip: 'Médias partagés',
         ),
-        if (widget.channel.type == 'ONE_TO_ONE')
+        if (!widget.channel.isClosed)
           IconButton(
             onPressed: () {
               Navigator.of(context).push(
@@ -430,6 +438,75 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ],
     );
+  }
+
+  void _showCloseClaimDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clôturer le sinistre'),
+        content: const Text(
+          'Êtes-vous sûr de vouloir clôturer ce sinistre ?\n\n'
+          'Le canal sera fermé et les membres ne pourront plus envoyer de messages.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _closeClaim();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Clôturer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _closeClaim() async {
+    if (widget.claimId == null) return;
+
+    try {
+      final claimProvider = Provider.of<ClaimProvider>(context, listen: false);
+      final success = await claimProvider.updateClaimStatus(
+        widget.claimId!,
+        'CLOSED',
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le sinistre a été clôturé avec succès'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              claimProvider.errorMessage ?? 'Erreur lors de la clôture du sinistre',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showChannelInfo() {

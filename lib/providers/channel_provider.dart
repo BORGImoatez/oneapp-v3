@@ -13,11 +13,13 @@ class ChannelProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _currentBuildingContext;
+  Channel? _selectedChannel;
 
   List<Channel> get channels => _channels;
   List<User> get buildingResidents => _buildingResidents;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Channel? get selectedChannel => _selectedChannel;
 
   Future<void> loadChannels({bool refresh = false}) async {
     // Vérifier le contexte du bâtiment
@@ -274,6 +276,23 @@ class ChannelProvider with ChangeNotifier {
     // Recharger immédiatement
     loadChannels(refresh: true);
     loadBuildingResidents(buildingId);
+  }
+
+  Future<void> loadChannelById(int channelId) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _apiService.get('/channels/$channelId');
+      _selectedChannel = Channel.fromJson(response);
+      notifyListeners();
+    } catch (e) {
+      print('DEBUG: Error loading channel by ID: $e');
+      _setError(e.toString());
+      _selectedChannel = null;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   void _setError(String error) {

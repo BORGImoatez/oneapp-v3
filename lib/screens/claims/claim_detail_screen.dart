@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../../models/claim_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/claim_provider.dart';
+import '../../providers/channel_provider.dart';
 import '../../services/storage_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/user_avatar.dart';
+import '../chat/chat_screen.dart';
 
 class ClaimDetailScreen extends StatefulWidget {
   final int claimId;
@@ -402,6 +404,43 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
     return '${date.day}/${date.month}/${date.year} à ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  Future<void> _openEmergencyChannel(ClaimModel claim) async {
+    if (claim.emergencyChannelId == null) return;
+
+    try {
+      final channelProvider = Provider.of<ChannelProvider>(context, listen: false);
+      await channelProvider.loadChannelById(claim.emergencyChannelId!);
+
+      final channel = channelProvider.selectedChannel;
+      if (channel != null && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              channel: channel,
+              claimId: claim.id,
+            ),
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de charger le canal'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildEmergencySection(ClaimModel claim) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -441,15 +480,7 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
               if (claim.emergencyChannelId != null)
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/chat',
-                        arguments: {
-                          'channelId': claim.emergencyChannelId,
-                        },
-                      );
-                    },
+                    onPressed: () => _openEmergencyChannel(claim),
                     icon: const Icon(Icons.chat, size: 18),
                     label: const Text('Discussion'),
                     style: ElevatedButton.styleFrom(
