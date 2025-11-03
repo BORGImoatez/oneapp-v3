@@ -26,9 +26,12 @@ class CallProvider with ChangeNotifier {
 
     _webSocketService = webSocketService;
 
-    // Enregistrer le callback AVANT d'initialiser WebRTC
-    _webSocketService!.onIncomingCall = _handleIncomingCall;
-    print('CallProvider: onIncomingCall callback registered');
+    // Enregistrer un callback pour les reconnexions WebSocket
+    _webSocketService!.onConnected = _onWebSocketReconnected;
+    print('CallProvider: onConnected callback registered for reconnections');
+
+    // Enregistrer les callbacks d'appel
+    _registerCallCallbacks();
 
     // Initialiser WebRTC avec WebSocket
     await _webrtcService.initialize(_webSocketService!);
@@ -38,15 +41,31 @@ class CallProvider with ChangeNotifier {
     _webSocketService!.ensureCallSignalsSubscription();
     print('CallProvider: Call signals subscription ensured');
 
+    // Debug pour vérifier l'état
+    _webSocketService!.debugCallSubscriptions();
+
     print('CallProvider initialized successfully');
+  }
+
+  void _onWebSocketReconnected() {
+    print('CallProvider: WebSocket reconnected, re-registering callbacks');
+    _registerCallCallbacks();
+    _webSocketService!.ensureCallSignalsSubscription();
+    _webSocketService!.debugCallSubscriptions();
+  }
+
+  void _registerCallCallbacks() {
+    _webSocketService!.onIncomingCall = _handleIncomingCall;
+    print('CallProvider: Call callbacks registered');
   }
 
   void _ensureCallbacksRegistered() {
     if (_webSocketService != null) {
       print('CallProvider: Re-registering callbacks after call ended');
-      _webSocketService!.onIncomingCall = _handleIncomingCall;
+      _registerCallCallbacks();
       _webrtcService.initialize(_webSocketService!);
       _webSocketService!.ensureCallSignalsSubscription();
+      _webSocketService!.debugCallSubscriptions();
       print('CallProvider: Callbacks re-registered successfully');
     }
   }
@@ -125,6 +144,11 @@ class CallProvider with ChangeNotifier {
     required String receiverId,
   }) async {
     try {
+      print('Initiating call to $receiverId...');
+
+      // Vérifier l'état des souscriptions avant l'appel
+      _webSocketService?.debugCallSubscriptions();
+
       final call = await _callService.initiateCall(
         channelId: channelId,
         receiverId: receiverId,

@@ -14,6 +14,8 @@ class WebSocketService {
   StompClient? _stompClient;
   bool _isConnected = false;
   final Map<int, void Function()> _subscriptions = {};
+  Function()? _callSignalUnsubscribe;
+  Function()? _callNotificationUnsubscribe;
 
   // Callbacks
   Function(Message)? onMessageReceived;
@@ -46,6 +48,9 @@ class WebSocketService {
         onDisconnect: _onDisconnect,
         onStompError: _onError,
         onWebSocketError: _onWebSocketError,
+        reconnectDelay: const Duration(seconds: 3),
+        heartbeatIncoming: const Duration(seconds: 10),
+        heartbeatOutgoing: const Duration(seconds: 10),
         stompConnectHeaders: {
           'Authorization': 'Bearer $token',
         },
@@ -60,26 +65,51 @@ class WebSocketService {
   }
 
   void _onConnect(StompFrame frame) {
-    print('=== WebSocket CONNECTED ===');
+    print('=== WebSocket CONNECTED (or RECONNECTED) ===');
     print('Frame command: ${frame.command}');
     _isConnected = true;
+
     print('About to subscribe to call signals...');
+    _unsubscribeCallSignals();
     _subscribeToCallSignals();
     print('Call signals subscription completed');
+
+    // Le callback onConnected doit réinitialiser tous les callbacks et subscriptions
+    print('Calling onConnected callback...');
     onConnected?.call();
     print('=== WebSocket connection setup completed ===');
   }
 
-  // Permet de s'abonner aux signaux même si déjà connecté
   void ensureCallSignalsSubscription() {
     if (_isConnected) {
+      print('Ensuring call signals subscription...');
+      _unsubscribeCallSignals();
       _subscribeToCallSignals();
+      print('Call signals subscription refreshed');
+    }
+  }
+
+  void _unsubscribeCallSignals() {
+    try {
+      if (_callSignalUnsubscribe != null) {
+        _callSignalUnsubscribe!();
+        _callSignalUnsubscribe = null;
+        print('Unsubscribed from /user/queue/signal');
+      }
+      if (_callNotificationUnsubscribe != null) {
+        _callNotificationUnsubscribe!();
+        _callNotificationUnsubscribe = null;
+        print('Unsubscribed from /user/queue/call');
+      }
+    } catch (e) {
+      print('Error unsubscribing from call signals: $e');
     }
   }
 
   void _onDisconnect(StompFrame frame) {
     print('WebSocket disconnected');
     _isConnected = false;
+    _unsubscribeCallSignals();
     onDisconnected?.call();
   }
 
@@ -184,6 +214,9 @@ class WebSocketService {
     }
     _subscriptions.clear();
 
+    // Unsubscribe from call signals
+    _unsubscribeCallSignals();
+
     if (_stompClient != null) {
       _stompClient!.deactivate();
       _stompClient = null;
@@ -219,7 +252,7 @@ class WebSocketService {
     print('Subscribing to call signals...');
 
     // Subscribe to WebRTC signaling messages
-    _stompClient!.subscribe(
+    _callSignalUnsubscribe = _stompClient!.subscribe(
       destination: '/user/queue/signal',
       callback: (StompFrame frame) {
         print('Received frame on /user/queue/signal');
@@ -237,7 +270,7 @@ class WebSocketService {
     print('Successfully subscribed to /user/queue/signal');
 
     // Subscribe to call notifications (incoming calls, call status updates)
-    _stompClient!.subscribe(
+    _callNotificationUnsubscribe = _stompClient!.subscribe(
       destination: '/user/queue/call',
       callback: (StompFrame frame) {
         print('Received frame on /user/queue/call');
@@ -273,4 +306,15 @@ class WebSocketService {
   }
 
   StompClient? get stompClient => _stompClient;
+
+  void debugCallSubscriptions() {
+    print('=== Call Subscriptions Debug ===');
+    print('WebSocket connected: $_isConnected');
+    print('StompClient: ${_stompClient != null ? "Active" : "Null"}');
+    print('Call signal subscription: ${_callSignalUnsubscribe != null ? "Active" : "Inactive"}');
+    print('Call notification subscription: ${_callNotificationUnsubscribe != null ? "Active" : "Inactive"}');
+    print('onIncomingCall callback: ${onIncomingCall != null ? "Set" : "Not set"}');
+    print('onCallSignalReceived callback: ${onCallSignalReceived != null ? "Set" : "Not set"}');
+    print('================================');
+  }
 }
