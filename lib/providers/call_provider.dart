@@ -95,9 +95,19 @@ class CallProvider with ChangeNotifier {
             _isInCall = false;
             _ensureCallbacksRegistered();
           } else if (call.status == 'ANSWERED') {
-            print('CallProvider: Call answered');
+            print('CallProvider: Call answered by remote user');
             _stopRingtone();
             _currentCall = call;
+            _isInCall = true;
+
+            // L'appelant doit maintenant envoyer l'offre WebRTC
+            print('CallProvider: Starting WebRTC connection...');
+            _webrtcService.startCall(
+              call.channelId.toString(),
+              call.receiverId,
+            ).catchError((e) {
+              print('CallProvider: Error starting WebRTC: $e');
+            });
           }
           notifyListeners();
         }
@@ -184,6 +194,11 @@ class CallProvider with ChangeNotifier {
     }
   }
 
+  // Méthode publique pour stopper la sonnerie (appelée depuis l'UI)
+  Future<void> stopRingtone() async {
+    await _stopRingtone();
+  }
+
   Future<void> initiateCall({
     required int channelId,
     required String receiverId,
@@ -204,10 +219,9 @@ class CallProvider with ChangeNotifier {
 
       await _playRingtone();
 
-      await _webrtcService.startCall(
-        channelId.toString(),
-        receiverId,
-      );
+      // Ne pas envoyer l'offre WebRTC immédiatement
+      // L'offre sera envoyée quand le receveur répond (statut ANSWERED)
+      print('CallProvider: Waiting for receiver to answer...');
 
       notifyListeners();
     } catch (e) {

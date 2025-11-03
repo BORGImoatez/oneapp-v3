@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:provider/provider.dart';
 import '../../models/call_model.dart';
 import '../../services/webrtc_service.dart';
 import '../../services/call_service.dart';
+import '../../providers/call_provider.dart';
 import '../../widgets/user_avatar.dart';
 import 'active_call_screen.dart';
 
@@ -24,7 +25,6 @@ class IncomingCallScreen extends StatefulWidget {
 class _IncomingCallScreenState extends State<IncomingCallScreen>
     with SingleTickerProviderStateMixin {
   final CallService _callService = CallService();
-  final AudioPlayer _audioPlayer = AudioPlayer();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   bool _isVibrating = false;
@@ -66,7 +66,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       await Vibration.cancel();
       _isVibrating = false;
     }
-    await _audioPlayer.stop();
+    // Stopper la sonnerie du CallProvider
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+    await callProvider.stopRingtone();
   }
 
   Future<void> _answerCall() async {
@@ -122,7 +124,6 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   void dispose() {
     _stopRinging();
     _animationController.dispose();
-    _audioPlayer.dispose();
     super.dispose();
   }
 
