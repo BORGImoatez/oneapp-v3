@@ -13,8 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -166,45 +168,53 @@ public class ClaimService {
     }
 
     private void addEmergencyChannelMembers(Channel channel, Claim claim, List<String> affectedApartmentIds) {
-        // Add reporter as owner
-        ChannelMember reporterMember = ChannelMember.builder()
-                .channel(channel)
-                .userId(claim.getReporter().getIdUsers())
-                .role(MemberRole.MEMBER)
-                .canWrite(true)
-                .build();
-        channelMemberRepository.save(reporterMember);
+        Set<String> addedUserIds = new HashSet<>();
 
-        // Add building admins
+        // Add reporter as member
+        String reporterId = claim.getReporter().getIdUsers();
+        addChannelMemberIfNotExists(channel, reporterId, MemberRole.MEMBER);
+        addedUserIds.add(reporterId);
+
+        // Add building admins (skip if already added as reporter)
         List<ResidentBuilding> admins = residentBuildingRepository
                 .findByBuildingIdAndRole(claim.getBuilding().getBuildingId(), UserRole.BUILDING_ADMIN);
         for (ResidentBuilding admin : admins) {
-            ChannelMember adminMember = ChannelMember.builder()
-                    .channel(channel)
-                    .userId(admin.getResident().getIdUsers())
-                    .role(MemberRole.ADMIN)
-                    .canWrite(true)
-                    .build();
-            channelMemberRepository.save(adminMember);
+            String adminId = admin.getResident().getIdUsers();
+            if (!addedUserIds.contains(adminId)) {
+                addChannelMemberIfNotExists(channel, adminId, MemberRole.ADMIN);
+                addedUserIds.add(adminId);
+            }
         }
 
-        // Add affected apartment residents
+        // Add affected apartment residents (skip if already added)
         if (affectedApartmentIds != null && !affectedApartmentIds.isEmpty()) {
             for (String affectedApartmentId : affectedApartmentIds) {
                 List<ResidentBuilding> residents = residentBuildingRepository
                         .findByBuildingIdAndApartmentId(claim.getBuilding().getBuildingId(), affectedApartmentId);
                 for (ResidentBuilding resident : residents) {
-                    if (!resident.getResident().getIdUsers().equals(claim.getReporter().getIdUsers())) {
-                        ChannelMember member = ChannelMember.builder()
-                                .channel(channel)
-                                .userId(resident.getResident().getIdUsers())
-                                .role(MemberRole.MEMBER)
-                                .canWrite(true)
-                                .build();
-                        channelMemberRepository.save(member);
+                    String residentId = resident.getResident().getIdUsers();
+                    if (!addedUserIds.contains(residentId)) {
+                        addChannelMemberIfNotExists(channel, residentId, MemberRole.MEMBER);
+                        addedUserIds.add(residentId);
                     }
                 }
             }
+        }
+    }
+
+    private void addChannelMemberIfNotExists(Channel channel, String userId, MemberRole role) {
+        // Check if member already exists
+        java.util.Optional<ChannelMember> existingMember = channelMemberRepository
+                .findByChannelIdAndUserId(channel.getId(), userId);
+
+        if (existingMember.isEmpty()) {
+            ChannelMember member = ChannelMember.builder()
+                    .channel(channel)
+                    .userId(userId)
+                    .role(role)
+                    .canWrite(true)
+                    .build();
+            channelMemberRepository.save(member);
         }
     }
 

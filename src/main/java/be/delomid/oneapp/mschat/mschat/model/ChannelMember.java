@@ -12,7 +12,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "channel_members")
+@Table(
+    name = "channel_members",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_channel_member_user",
+        columnNames = {"channel_id", "user_id"}
+    )
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
