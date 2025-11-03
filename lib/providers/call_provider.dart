@@ -141,8 +141,8 @@ class CallProvider with ChangeNotifier {
         callerName: callData['callerName'],
         callerAvatar: callData['callerAvatar'],
         receiverId: currentUser.id,
-        receiverName: '${currentUser.firstName} ${currentUser.lastName}',
-        receiverAvatar: currentUser.pictureUrl,
+        receiverName: '${currentUser.fname} ${currentUser.lname}',
+        receiverAvatar: currentUser.picture,
         status: callData['status'],
         createdAt: DateTime.now(),
       );
