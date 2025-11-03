@@ -14,6 +14,7 @@ class CallProvider with ChangeNotifier {
   List<CallModel> _callHistory = [];
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isRingtonePlaying = false;
+  WebSocketService? _webSocketService;
 
   CallModel? get currentCall => _currentCall;
   bool get isInCall => _isInCall;
@@ -23,27 +24,40 @@ class CallProvider with ChangeNotifier {
   void initialize(WebSocketService webSocketService) async {
     print('CallProvider: Starting initialization...');
 
+    _webSocketService = webSocketService;
+
     // Enregistrer le callback AVANT d'initialiser WebRTC
-    webSocketService.onIncomingCall = _handleIncomingCall;
+    _webSocketService!.onIncomingCall = _handleIncomingCall;
     print('CallProvider: onIncomingCall callback registered');
 
     // Initialiser WebRTC avec WebSocket
-    await _webrtcService.initialize(webSocketService);
+    await _webrtcService.initialize(_webSocketService!);
     print('CallProvider: WebRTC service initialized');
 
     // Re-souscrire aux signaux d'appel pour s'assurer que le callback est actif
-    webSocketService.ensureCallSignalsSubscription();
+    _webSocketService!.ensureCallSignalsSubscription();
     print('CallProvider: Call signals subscription ensured');
 
     print('CallProvider initialized successfully');
   }
 
+  void _ensureCallbacksRegistered() {
+    if (_webSocketService != null) {
+      print('CallProvider: Re-registering callbacks after call ended');
+      _webSocketService!.onIncomingCall = _handleIncomingCall;
+      _webrtcService.initialize(_webSocketService!);
+      _webSocketService!.ensureCallSignalsSubscription();
+      print('CallProvider: Callbacks re-registered successfully');
+    }
+  }
+
   void _handleIncomingCall(Map<String, dynamic> callData) {
     try {
-      print('Received incoming call notification: ${callData['status']}');
+      print('CallProvider: Received incoming call notification: ${callData['status']}');
       final call = CallModel.fromJson(callData);
 
       if (call.status == 'INITIATED' && _currentCall == null) {
+        print('CallProvider: New incoming call from ${call.callerId}');
         _currentCall = call;
         _playRingtoneIncome(); // 🔔 pour appel entrant
 
@@ -51,10 +65,14 @@ class CallProvider with ChangeNotifier {
       } else if (call.status == 'ANSWERED' || call.status == 'ENDED' || call.status == 'REJECTED') {
         if (_currentCall?.id == call.id) {
           if (call.status == 'ENDED' || call.status == 'REJECTED') {
+            print('CallProvider: Call ended or rejected, cleaning up');
             _stopRingtone();
             _currentCall = null;
             _isInCall = false;
+            // Réenregistrer les callbacks pour le prochain appel
+            _ensureCallbacksRegistered();
           } else if (call.status == 'ANSWERED') {
+            print('CallProvider: Call answered');
             _stopRingtone();
             _currentCall = call;
           }
@@ -62,7 +80,7 @@ class CallProvider with ChangeNotifier {
         }
       }
     } catch (e) {
-      print('Error handling incoming call: $e');
+      print('CallProvider: Error handling incoming call: $e');
     }
   }
 
@@ -169,12 +187,17 @@ class CallProvider with ChangeNotifier {
       _currentCall = null;
       _isInCall = false;
 
+      // Réenregistrer les callbacks pour le prochain appel
+      _ensureCallbacksRegistered();
+
+      print('Call ended, WebRTC cleaned up and ready for next call');
       notifyListeners();
     } catch (e) {
       print('Error ending call: $e');
       await _stopRingtone();
       _currentCall = null;
       _isInCall = false;
+      _ensureCallbacksRegistered();
       notifyListeners();
     }
   }
@@ -189,10 +212,18 @@ class CallProvider with ChangeNotifier {
         _isInCall = false;
       }
 
+      // Réenregistrer les callbacks pour le prochain appel
+      _ensureCallbacksRegistered();
+
+      print('Call rejected, ready for next call');
       notifyListeners();
     } catch (e) {
       print('Error rejecting call: $e');
       await _stopRingtone();
+      _currentCall = null;
+      _isInCall = false;
+      _ensureCallbacksRegistered();
+      notifyListeners();
       rethrow;
     }
   }
