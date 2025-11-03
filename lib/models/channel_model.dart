@@ -10,6 +10,7 @@ class Channel {
   final String createdBy;
   final bool isActive;
   final bool isPrivate;
+  final bool isClosed;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final int memberCount;
@@ -25,6 +26,7 @@ class Channel {
     required this.createdBy,
     required this.isActive,
     required this.isPrivate,
+    this.isClosed = false,
     required this.createdAt,
     this.updatedAt,
     required this.memberCount,
@@ -42,6 +44,7 @@ class Channel {
       createdBy: json['createdBy'],
       isActive: json['isActive'] ?? true,
       isPrivate: json['isPrivate'] ?? false,
+      isClosed: json['isClosed'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       memberCount: json['memberCount'] ?? 0,
@@ -60,6 +63,7 @@ class Channel {
       'createdBy': createdBy,
       'isActive': isActive,
       'isPrivate': isPrivate,
+      'isClosed': isClosed,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'memberCount': memberCount,

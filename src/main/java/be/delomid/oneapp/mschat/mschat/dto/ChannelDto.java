@@ -19,6 +19,7 @@ public class ChannelDto {
     private String createdBy;
     private Boolean isActive;
     private Boolean isPrivate;
+    private Boolean isClosed;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long memberCount;

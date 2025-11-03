@@ -591,27 +591,32 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildTextInput() {
+    final isChannelClosed = widget.channel.isClosed;
+
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: isChannelClosed ? Colors.grey[200] : Colors.grey[100],
           borderRadius: BorderRadius.circular(24),
         ),
         child: TextField(
           controller: _messageController,
           focusNode: _focusNode,
           maxLines: null,
+          enabled: !isChannelClosed,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            hintText: 'Tapez votre message...',
+          decoration: InputDecoration(
+            hintText: isChannelClosed
+                ? 'Ce canal est fermé'
+                : 'Tapez votre message...',
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(
+            contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
             ),
           ),
           onSubmitted: (text) {
-            if (text.trim().isNotEmpty) {
+            if (text.trim().isNotEmpty && !isChannelClosed) {
               _sendMessage(content: text);
             }
           },
@@ -621,6 +626,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildSendButton() {
+    final isChannelClosed = widget.channel.isClosed;
+
+    if (isChannelClosed) {
+      return const SizedBox.shrink();
+    }
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       child: _hasText

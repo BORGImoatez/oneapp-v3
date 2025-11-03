@@ -633,6 +633,7 @@ public class ChannelService {
                 .createdBy(channel.getCreatedBy())
                 .isActive(channel.getIsActive())
                 .isPrivate(channel.getIsPrivate())
+                .isClosed(channel.getIsClosed())
                 .createdAt(channel.getCreatedAt())
                 .updatedAt(channel.getUpdatedAt())
                 .memberCount(memberCount)

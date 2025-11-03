@@ -55,6 +55,14 @@ public class Claim {
     @OneToMany(mappedBy = "claim", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ClaimPhoto> photos = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "emergency_channel_id")
+    private Channel emergencyChannel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "emergency_folder_id")
+    private Folder emergencyFolder;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -177,5 +185,21 @@ public class Claim {
 
     public void setPhotos(List<ClaimPhoto> photos) {
         this.photos = photos;
+    }
+
+    public Channel getEmergencyChannel() {
+        return emergencyChannel;
+    }
+
+    public void setEmergencyChannel(Channel emergencyChannel) {
+        this.emergencyChannel = emergencyChannel;
+    }
+
+    public Folder getEmergencyFolder() {
+        return emergencyFolder;
+    }
+
+    public void setEmergencyFolder(Folder emergencyFolder) {
+        this.emergencyFolder = emergencyFolder;
     }
 }

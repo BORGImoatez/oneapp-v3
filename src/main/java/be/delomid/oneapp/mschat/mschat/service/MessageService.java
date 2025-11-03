@@ -47,6 +47,11 @@ public class MessageService {
         Channel channel = channelRepository.findById(request.getChannelId())
                 .orElseThrow(() -> new ChannelNotFoundException("Channel not found: " + request.getChannelId()));
 
+        // Vérifier si le canal est fermé
+        if (channel.getIsClosed() != null && channel.getIsClosed()) {
+            throw new IllegalStateException("Ce canal est fermé et n'accepte plus de messages");
+        }
+
         // Vérifier que l'utilisateur est membre du canal et peut écrire
         validateWriteAccess(request.getChannelId(), senderId);
 

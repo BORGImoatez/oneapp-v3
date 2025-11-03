@@ -17,6 +17,8 @@ class ClaimModel {
   final DateTime updatedAt;
   final List<String> affectedApartmentIds;
   final List<ClaimPhotoModel> photos;
+  final int? emergencyChannelId;
+  final int? emergencyFolderId;
 
   ClaimModel({
     required this.id,
@@ -37,6 +39,8 @@ class ClaimModel {
     required this.updatedAt,
     required this.affectedApartmentIds,
     required this.photos,
+    this.emergencyChannelId,
+    this.emergencyFolderId,
   });
 
   factory ClaimModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +66,8 @@ class ClaimModel {
               ?.map((p) => ClaimPhotoModel.fromJson(p))
               .toList() ??
           [],
+      emergencyChannelId: json['emergencyChannelId'],
+      emergencyFolderId: json['emergencyFolderId'],
     );
   }
 
@@ -85,6 +91,8 @@ class ClaimModel {
       'updatedAt': updatedAt.toIso8601String(),
       'affectedApartmentIds': affectedApartmentIds,
       'photos': photos.map((p) => p.toJson()).toList(),
+      'emergencyChannelId': emergencyChannelId,
+      'emergencyFolderId': emergencyFolderId,
     };
   }
 

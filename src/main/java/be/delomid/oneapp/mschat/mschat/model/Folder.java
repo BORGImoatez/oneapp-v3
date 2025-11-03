@@ -65,6 +65,10 @@ public class Folder {
     @Builder.Default
     private List<FolderPermission> permissions = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "claim_id")
+    private Claim claim;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

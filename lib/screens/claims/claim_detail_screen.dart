@@ -235,6 +235,10 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
               }).toList(),
             ),
           ),
+          if (claim.emergencyChannelId != null || claim.emergencyFolderId != null) ...[
+            const SizedBox(height: 16),
+            _buildEmergencySection(claim),
+          ],
           const SizedBox(height: 24),
           _buildSection(
             'Cause du sinistre',
@@ -396,6 +400,112 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} à ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildEmergencySection(ClaimModel claim) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.emergency, color: Colors.red.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Canal d\'urgence',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Un canal de discussion et un dossier ont été créés pour ce sinistre.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              if (claim.emergencyChannelId != null)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/chat',
+                        arguments: {
+                          'channelId': claim.emergencyChannelId,
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.chat, size: 18),
+                    label: const Text('Discussion'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              if (claim.emergencyChannelId != null && claim.emergencyFolderId != null)
+                const SizedBox(width: 12),
+              if (claim.emergencyFolderId != null)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/files',
+                        arguments: {
+                          'folderId': claim.emergencyFolderId,
+                        },
+                      );
+                    },
+                    icon: Icon(Icons.folder, size: 18, color: Colors.red.shade700),
+                    label: Text('Dossier', style: TextStyle(color: Colors.red.shade700)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.red.shade600),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (claim.status == 'CLOSED')
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Ce sinistre est clôturé. Le canal est en lecture seule.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

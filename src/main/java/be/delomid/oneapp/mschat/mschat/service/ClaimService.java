@@ -39,6 +39,12 @@ public class ClaimService {
 
      private final NotificationService notificationService;
 
+     private final ChannelRepository channelRepository;
+
+     private final ChannelMemberRepository channelMemberRepository;
+
+     private final FolderRepository folderRepository;
+
     @Transactional
     public ClaimDto createClaim(String residentId, CreateClaimRequest request, List<MultipartFile> photos) {
         Resident reporter = residentRepository.findById(residentId)
@@ -69,6 +75,16 @@ public class ClaimService {
         claim.setInsuranceCompany(request.getInsuranceCompany());
         claim.setInsurancePolicyNumber(request.getInsurancePolicyNumber());
         claim.setStatus(ClaimStatus.PENDING);
+
+        claim = claimRepository.save(claim);
+
+        // Create emergency channel
+        Channel emergencyChannel = createEmergencyChannel(claim, reporter);
+        claim.setEmergencyChannel(emergencyChannel);
+
+        // Create emergency folder
+        Folder emergencyFolder = createEmergencyFolder(claim, reporter, building);
+        claim.setEmergencyFolder(emergencyFolder);
 
         claim = claimRepository.save(claim);
 
@@ -103,10 +119,93 @@ public class ClaimService {
             }
         }
 
+        // Add channel members: admin, reporter, affected apartment residents
+        addEmergencyChannelMembers(emergencyChannel, claim, request.getAffectedApartmentIds());
+
         // Send notifications to building admins
         sendClaimNotifications(claim);
 
         return convertToDto(claim);
+    }
+
+    private Channel createEmergencyChannel(Claim claim, Resident reporter) {
+        String channelName = "Sinistre - Apt " + claim.getApartment().getApartmentNumber();
+        String description = "Canal d'urgence pour le sinistre déclaré le " +
+                             claim.getCreatedAt().toLocalDate().toString();
+
+        Channel channel = Channel.builder()
+                .name(channelName)
+                .description(description)
+                .type(ChannelType.GROUP)
+                .buildingId(claim.getBuilding().getBuildingId())
+                .createdBy(reporter.getIdUsers())
+                .isPrivate(true)
+                .isClosed(false)
+                .build();
+
+        return channelRepository.save(channel);
+    }
+
+    private Folder createEmergencyFolder(Claim claim, Resident reporter, Building building) {
+        String folderName = "Sinistre_Apt" + claim.getApartment().getApartmentNumber() + "_" +
+                            claim.getCreatedAt().toLocalDate().toString();
+        String folderPath = "building_" + building.getBuildingId() + "/claims/" + folderName;
+
+        Folder folder = Folder.builder()
+                .name(folderName)
+                .folderPath(folderPath)
+                .apartment(claim.getApartment())
+                .building(building)
+                .createdBy(reporter.getIdUsers())
+                .isShared(true)
+                .shareType(ShareType.SPECIFIC_APARTMENTS)
+                .claim(claim)
+                .build();
+
+        return folderRepository.save(folder);
+    }
+
+    private void addEmergencyChannelMembers(Channel channel, Claim claim, List<String> affectedApartmentIds) {
+        // Add reporter as owner
+        ChannelMember reporterMember = ChannelMember.builder()
+                .channel(channel)
+                .userId(claim.getReporter().getIdUsers())
+                .role(MemberRole.MEMBER)
+                .canWrite(true)
+                .build();
+        channelMemberRepository.save(reporterMember);
+
+        // Add building admins
+        List<ResidentBuilding> admins = residentBuildingRepository
+                .findByBuildingIdAndRole(claim.getBuilding().getBuildingId(), UserRole.BUILDING_ADMIN);
+        for (ResidentBuilding admin : admins) {
+            ChannelMember adminMember = ChannelMember.builder()
+                    .channel(channel)
+                    .userId(admin.getResident().getIdUsers())
+                    .role(MemberRole.ADMIN)
+                    .canWrite(true)
+                    .build();
+            channelMemberRepository.save(adminMember);
+        }
+
+        // Add affected apartment residents
+        if (affectedApartmentIds != null && !affectedApartmentIds.isEmpty()) {
+            for (String affectedApartmentId : affectedApartmentIds) {
+                List<ResidentBuilding> residents = residentBuildingRepository
+                        .findByBuildingIdAndApartmentId(claim.getBuilding().getBuildingId(), affectedApartmentId);
+                for (ResidentBuilding resident : residents) {
+                    if (!resident.getResident().getIdUsers().equals(claim.getReporter().getIdUsers())) {
+                        ChannelMember member = ChannelMember.builder()
+                                .channel(channel)
+                                .userId(resident.getResident().getIdUsers())
+                                .role(MemberRole.MEMBER)
+                                .canWrite(true)
+                                .build();
+                        channelMemberRepository.save(member);
+                    }
+                }
+            }
+        }
     }
 
     private void sendClaimNotifications(Claim claim) {
@@ -173,7 +272,16 @@ public class ClaimService {
         Claim claim = claimRepository.findById(claimId)
                 .orElseThrow(() -> new RuntimeException("Claim not found"));
 
-        claim.setStatus(ClaimStatus.valueOf(status));
+        ClaimStatus newStatus = ClaimStatus.valueOf(status);
+        claim.setStatus(newStatus);
+
+        // If claim is closed, close the emergency channel
+        if (newStatus == ClaimStatus.CLOSED && claim.getEmergencyChannel() != null) {
+            Channel channel = claim.getEmergencyChannel();
+            channel.setIsClosed(true);
+            channelRepository.save(channel);
+        }
+
         claim = claimRepository.save(claim);
 
         // Send notification to reporter
@@ -215,6 +323,8 @@ public class ClaimService {
         dto.setStatus(claim.getStatus().name());
         dto.setCreatedAt(claim.getCreatedAt());
         dto.setUpdatedAt(claim.getUpdatedAt());
+        dto.setEmergencyChannelId(claim.getEmergencyChannel() != null ? claim.getEmergencyChannel().getId() : null);
+        dto.setEmergencyFolderId(claim.getEmergencyFolder() != null ? claim.getEmergencyFolder().getId() : null)
 
         // Get affected apartments
         List<ClaimAffectedApartment> affectedApts = claimAffectedApartmentRepository.findByClaimId(claim.getId());

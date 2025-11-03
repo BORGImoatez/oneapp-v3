@@ -55,6 +55,10 @@ public class Channel {
     @Column(name = "is_private")
     private Boolean isPrivate = false;
 
+    @Builder.Default
+    @Column(name = "is_closed")
+    private Boolean isClosed = false;
+
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<ChannelMember> members = new HashSet<>();

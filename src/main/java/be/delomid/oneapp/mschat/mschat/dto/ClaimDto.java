@@ -27,6 +27,6 @@ public class ClaimDto {
     private LocalDateTime updatedAt;
     private List<String> affectedApartmentIds;
     private List<ClaimPhotoDto> photos;
-
-
+    private Long emergencyChannelId;
+    private Long emergencyFolderId;
 }
