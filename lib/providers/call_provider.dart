@@ -59,8 +59,7 @@ class CallProvider with ChangeNotifier {
       if (call.status == 'INITIATED' && _currentCall == null) {
         print('CallProvider: New incoming call from ${call.callerId}');
         _currentCall = call;
-        _playRingtoneIncome(); // 🔔 pour appel entrant
-
+        _playRingtoneIncome();
         notifyListeners();
       } else if (call.status == 'ANSWERED' || call.status == 'ENDED' || call.status == 'REJECTED') {
         if (_currentCall?.id == call.id) {
