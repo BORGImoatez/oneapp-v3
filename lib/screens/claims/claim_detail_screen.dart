@@ -42,7 +42,7 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
   Future<void> _updateStatus(String status) async {
     final claimProvider = Provider.of<ClaimProvider>(context, listen: false);
     final success =
-        await claimProvider.updateClaimStatus(widget.claimId, status);
+    await claimProvider.updateClaimStatus(widget.claimId, status);
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -220,7 +220,7 @@ class _ClaimDetailScreenState extends State<ClaimDetailScreen> {
               children: claim.claimTypes.map((type) {
                 return Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),

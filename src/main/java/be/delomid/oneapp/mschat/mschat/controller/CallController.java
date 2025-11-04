@@ -3,6 +3,8 @@ package be.delomid.oneapp.mschat.mschat.controller;
 import be.delomid.oneapp.mschat.mschat.dto.CallDto;
 import be.delomid.oneapp.mschat.mschat.service.CallService;
 import be.delomid.oneapp.mschat.mschat.util.SecurityContextUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@Slf4j
+@RequiredArgsConstructor
 @RequestMapping("/api/calls")
 public class CallController {
 
-    @Autowired
-    private CallService callService;
+
+    private final CallService callService;
 
     @PostMapping("/initiate")
     public ResponseEntity<CallDto> initiateCall(@RequestBody Map<String, Object> request) {
@@ -34,6 +38,7 @@ public class CallController {
     @PostMapping("/{callId}/answer")
     public ResponseEntity<CallDto> answerCall(@PathVariable Long callId) {
         try {
+            log.info("waywaa");
             String userId = SecurityContextUtil.getCurrentUserId();
             CallDto call = callService.answerCall(callId, userId);
             return ResponseEntity.ok(call);

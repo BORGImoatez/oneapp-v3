@@ -334,7 +334,7 @@ public class ClaimService {
         dto.setCreatedAt(claim.getCreatedAt());
         dto.setUpdatedAt(claim.getUpdatedAt());
         dto.setEmergencyChannelId(claim.getEmergencyChannel() != null ? claim.getEmergencyChannel().getId() : null);
-        dto.setEmergencyFolderId(claim.getEmergencyFolder() != null ? claim.getEmergencyFolder().getId() : null)
+        dto.setEmergencyFolderId(claim.getEmergencyFolder() != null ? claim.getEmergencyFolder().getId() : null);
 
         // Get affected apartments
         List<ClaimAffectedApartment> affectedApts = claimAffectedApartmentRepository.findByClaimId(claim.getId());

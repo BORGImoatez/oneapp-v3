@@ -28,7 +28,9 @@ import 'utils/constants.dart';
 void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
-await Firebase.initializeApp(
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  await Firebase.initializeApp(
   options: DefaultFirebaseOptions.currentPlatform,
 );
 await NotificationService().initFcm();

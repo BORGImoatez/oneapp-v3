@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../models/channel_model.dart';
 import '../models/user_model.dart';
@@ -161,7 +163,7 @@ class ChannelProvider with ChangeNotifier {
       _buildingResidents = residentsList
           .map((json) => User.fromJson(json))
           .toList();
-  print(_buildingResidents.length);
+      print(_buildingResidents.length);
       // Filtrer pour s'assurer qu'on n'a que les résidents du bâtiment actuel
       if (currentBuildingId != null) {
         _buildingResidents = _buildingResidents
@@ -284,10 +286,23 @@ class ChannelProvider with ChangeNotifier {
 
     try {
       final response = await _apiService.get('/channels/$channelId');
-      _selectedChannel = Channel.fromJson(response);
-      notifyListeners();
-    } catch (e) {
-      print('DEBUG: Error loading channel by ID: $e');
+
+      dynamic data = response.body;
+
+      // Some APIs return a JSON string — decode it if needed
+      if (data is String) {
+        data = jsonDecode(data);
+      }
+
+      if (data is Map<String, dynamic>) {
+        _selectedChannel = Channel.fromJson(data);
+        notifyListeners();
+      } else {
+        throw Exception('Unexpected response format for channel ID $channelId');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading channel by ID ($channelId): $e');
+      debugPrintStack(stackTrace: stackTrace);
       _setError(e.toString());
       _selectedChannel = null;
     } finally {
