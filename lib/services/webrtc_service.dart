@@ -1,277 +1,571 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:http/http.dart' as http;
+
+import 'package:mgi/services/storage_service.dart';
+import 'package:mgi/utils/constants.dart';
 import 'websocket_service.dart';
 
 class WebRTCService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
+
   final _remoteStreamController = StreamController<MediaStream>.broadcast();
   final _callStateController = StreamController<CallState>.broadcast();
 
   Stream<MediaStream> get remoteStream => _remoteStreamController.stream;
   Stream<CallState> get callState => _callStateController.stream;
 
-  final Map<String, dynamic> _configuration = {
-    'iceServers': [
-      {'urls': 'stun:stun.l.google.com:19302'},
-      {
-        'urls': 'turn:192.168.129.187:3478',
-        'username': 'testuser',
-        'credential': 'testpass'
-      }
-    ],
-    'sdpSemantics': 'unified-plan',
-  };
+  Map<String, dynamic>? _configuration;
 
+  /// ⚙️ Contraintes simples et compatibles (audio only)
   final Map<String, dynamic> _mediaConstraints = {
     'audio': true,
     'video': false,
   };
 
+  final Map<String, dynamic> _offerConstraints = {
+    'mandatory': {
+      'OfferToReceiveAudio': true,
+      'OfferToReceiveVideo': false,
+    },
+    'optional': [],
+  };
+
   WebSocketService? _webSocketService;
   String? _currentCallId;
   String? _remoteUserId;
-  bool _isInitialized = false;
 
+  bool _isInitialized = false;
+  bool _makingOffer = false;
+
+  /// Gestion du “premier appel qui ne marche pas”
+  final List<_PendingSignal> _pendingSignals = [];
+  bool _peerConnectionReady = false;
+  Completer<void>? _peerConnectionReadyCompleter;
+
+  final List<Map<String, dynamic>> _pendingRemoteIceCandidates = [];
+  bool _remoteDescriptionSet = false;
+
+  Timer? _iceCandidateTimer;
+  final List<Map<String, dynamic>> _localIceCandidatesToSend = [];
+
+  // -------------------------
+  // INITIALISATION
+  // -------------------------
   Future<void> initialize(WebSocketService webSocketService) async {
     if (_isInitialized) return;
 
     _webSocketService = webSocketService;
-
-    // Écouter les signaux WebRTC entrants
     _webSocketService!.onCallSignalReceived = _handleIncomingSignal;
-
-    // S'assurer que la souscription est active
     _webSocketService!.ensureCallSignalsSubscription();
 
     _isInitialized = true;
-    print('WebRTCService initialized and listening for signals');
+    print('✅ WebRTCService initialized');
   }
 
-  void _handleIncomingSignal(Map<String, dynamic> signal) async {
+  // -------------------------
+  // TURN / STUN DYNAMIQUE
+  // -------------------------
+  Future<Map<String, dynamic>> _getTurnConfiguration() async {
     try {
-      final type = signal['type'];
-      final data = signal['data'];
+      final token = await StorageService.getToken();
+      if (token == null) {
+        print('⚠️ No token, using fallback STUN only');
+        return {
+          'iceServers': [
+            {'urls': 'stun:51.91.99.191:3478'}
+          ],
+        };
+      }
 
-      print('WebRTCService received signal: $type');
+      final response = await http.get(
+        Uri.parse('${Constants.baseUrl}/webrtc/turn-credentials'),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 8));
 
-      switch (type) {
-        case 'offer':
-          // Si on reçoit une offre, on doit avoir déjà un PeerConnection
-          if (_peerConnection != null) {
-            await handleOffer(data['sdp']);
-          } else {
-            print('Received offer but PeerConnection not ready');
-          }
-          break;
-        case 'answer':
-          await handleAnswer(data['sdp']);
-          break;
-        case 'ice-candidate':
-          await handleIceCandidate(data['candidate']);
-          break;
-        case 'end-call':
-          await endCall();
-          break;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ TURN credentials loaded: ${data['username']}');
+
+        return {
+          'iceServers': [
+            {
+              'urls': data['uris'], // la liste d’URL retournée par ton backend
+              'username': data['username'],
+              'credential': data['password'],
+            }
+          ],
+        };
+      } else {
+        print('❌ Failed to load TURN: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error handling incoming signal: $e');
+      print('❌ Exception while loading TURN credentials: $e');
     }
+
+    // Fallback STUN
+    return {
+      'iceServers': [
+        {'urls': 'stun:51.91.99.191:3478'}
+      ],
+    };
   }
 
+  // -------------------------
+  // DÉMARRER UN APPEL (CALLER)
+  // -------------------------
   Future<void> startCall(String channelId, String remoteUserId) async {
     try {
-      print('WebRTCService: Starting call to $remoteUserId on channel $channelId');
+      await _cleanup();
+
       _remoteUserId = remoteUserId;
       _currentCallId = channelId;
 
-      await _createPeerConnection();
-      await _createOffer();
+      _remoteDescriptionSet = false;
+      _pendingRemoteIceCandidates.clear();
+      _pendingSignals.clear();
+      _peerConnectionReady = false;
+      _peerConnectionReadyCompleter = Completer<void>();
 
+      final iceConfig = await _getTurnConfiguration();
+
+      _configuration = {
+        ...iceConfig,
+        'sdpSemantics': 'unified-plan',
+        'iceTransportPolicy': 'all',
+        'bundlePolicy': 'max-bundle',
+        'rtcpMuxPolicy': 'require',
+        'iceCandidatePoolSize': 10,
+      };
+
+      print('📦 startCall final config: ${jsonEncode(_configuration)}');
+
+      await _createPeerConnection();
+
+      _peerConnectionReady = true;
+      _peerConnectionReadyCompleter?.complete();
+      await _processPendingSignals();
+
+      await _createOffer();
       _callStateController.add(CallState.calling);
-      print('WebRTCService: Call started, offer sent');
     } catch (e) {
-      print('WebRTCService: Error starting call: $e');
+      print('❌ Error starting call: $e');
       _callStateController.add(CallState.error);
-      throw Exception('Failed to start call: $e');
+      rethrow;
     }
   }
 
+  // -------------------------
+  // RÉPONDRE À UN APPEL (CALLEE)
+  // -------------------------
   Future<void> answerCall(String channelId, String remoteUserId) async {
     try {
-      print('WebRTCService: Answering call from $remoteUserId on channel $channelId');
+      await _cleanup();
+
       _remoteUserId = remoteUserId;
       _currentCallId = channelId;
 
-      // Créer le PeerConnection et attendre
+      _remoteDescriptionSet = false;
+      _pendingRemoteIceCandidates.clear();
+      _pendingSignals.clear();
+      _peerConnectionReady = false;
+      _peerConnectionReadyCompleter = Completer<void>();
+
+      // ⚠️ IMPORTANT :
+      // la permission micro doit être demandée côté UI AVANT d’arriver ici.
+
+      final iceConfig = await _getTurnConfiguration();
+
+      _configuration = {
+        ...iceConfig,
+        'sdpSemantics': 'unified-plan',
+        'iceTransportPolicy': 'all',
+        'bundlePolicy': 'max-bundle',
+        'rtcpMuxPolicy': 'require',
+        'iceCandidatePoolSize': 10,
+      };
+
+      print('📦 answerCall config: ${jsonEncode(_configuration)}');
+
       await _createPeerConnection();
 
-      // Ne pas marquer comme connecté immédiatement, attendre l'offre
+      _peerConnectionReady = true;
+      _peerConnectionReadyCompleter?.complete();
       _callStateController.add(CallState.ringing);
 
-      print('WebRTCService: PeerConnection ready to receive offer');
+      await _processPendingSignals();
     } catch (e) {
-      print('WebRTCService: Error answering call: $e');
+      print('❌ Error answering call: $e');
       _callStateController.add(CallState.error);
-      throw Exception('Failed to answer call: $e');
+      rethrow;
     }
   }
 
+  // -------------------------
+  // CRÉATION PEERCONNECTION
+  // -------------------------
   Future<void> _createPeerConnection() async {
-    _peerConnection = await createPeerConnection(_configuration);
+    try {
+      print('🧩 Creating PeerConnection with config: ${jsonEncode(_configuration)}');
 
-    _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+      _peerConnection = await createPeerConnection(_configuration!);
 
-    _localStream!.getTracks().forEach((track) {
-      _peerConnection!.addTrack(track, _localStream!);
-    });
+      // 🎤 Initialiser le micro UNE SEULE FOIS
+      _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
 
-    _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
-      if (candidate != null) {
-        _sendSignalingMessage('ice-candidate', {
-          'candidate': candidate.toMap(),
-        });
+      final audioTracks = _localStream!.getAudioTracks();
+      print('🎙 Local audio tracks count: ${audioTracks.length}');
+      for (var t in audioTracks) {
+        print('   -> id=${t.id}, enabled=${t.enabled}, muted=${t.muted}');
       }
-    };
 
-    _peerConnection!.onTrack = (RTCTrackEvent event) {
-      if (event.streams.isNotEmpty) {
-        _remoteStreamController.add(event.streams[0]);
+      for (var track in _localStream!.getTracks()) {
+        await _peerConnection!.addTrack(track, _localStream!);
       }
-    };
 
-    _peerConnection!.onConnectionState = (RTCPeerConnectionState state) {
-      switch (state) {
-        case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
+      // ICE CANDIDATES (batching)
+      _peerConnection!.onIceCandidate = (candidate) {
+        if (candidate.candidate == null) return;
+
+        final type = candidate.candidate!.contains('typ relay')
+            ? 'relay (TURN)'
+            : candidate.candidate!.contains('typ srflx')
+            ? 'srflx (STUN)'
+            : 'host';
+
+        print('❄ ICE [$type]: ${candidate.candidate!.substring(0, 80)}...');
+
+        _localIceCandidatesToSend.add(candidate.toMap());
+        _iceCandidateTimer?.cancel();
+        _iceCandidateTimer =
+            Timer(const Duration(milliseconds: 80), _sendBatchedIceCandidates);
+      };
+
+      _peerConnection!.onIceGatheringState = (state) {
+        print('❄ ICE Gathering: $state');
+        if (state == RTCIceGatheringState.RTCIceGatheringStateComplete) {
+          _sendBatchedIceCandidates();
+        }
+      };
+
+      _peerConnection!.onIceConnectionState = (state) {
+        print('❄ ICE Connection: $state');
+        if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+          print('❌ ICE failed - check TURN / réseau');
+          _callStateController.add(CallState.error);
+        } else if (state == RTCIceConnectionState.RTCIceConnectionStateConnected) {
+          print('✅ ICE connected');
+        }
+      };
+
+      _peerConnection!.onTrack = (event) {
+        if (event.streams.isNotEmpty) {
+          print('📡 Remote track received');
+          _remoteStreamController.add(event.streams[0]);
+        }
+      };
+
+      _peerConnection!.onConnectionState = (state) {
+        print('🌐 Connection: $state');
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _callStateController.add(CallState.connected);
-          break;
-        case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
-        case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
-        case RTCPeerConnectionState.RTCPeerConnectionStateClosed:
-          _callStateController.add(CallState.ended);
-          break;
-        default:
-          break;
-      }
-    };
+        } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+          _callStateController.add(CallState.error);
+        }
+      };
+    } catch (e) {
+      print('❌ Error creating PeerConnection: $e');
+      rethrow;
+    }
   }
 
+  // -------------------------
+  // ENVOI DES ICE CANDIDATES
+  // -------------------------
+  void _sendBatchedIceCandidates() {
+    if (_localIceCandidatesToSend.isEmpty) return;
+    print('📨 Sending ${_localIceCandidatesToSend.length} ICE candidates');
+    for (var c in _localIceCandidatesToSend) {
+      _sendSignalingMessage('ice-candidate', {'candidate': c});
+    }
+    _localIceCandidatesToSend.clear();
+  }
+
+  // -------------------------
+  // OFFRE (CALLER)
+  // -------------------------
   Future<void> _createOffer() async {
-    RTCSessionDescription offer = await _peerConnection!.createOffer();
+    _makingOffer = true;
+    final offer = await _peerConnection!.createOffer(_offerConstraints);
     await _peerConnection!.setLocalDescription(offer);
-
-    _sendSignalingMessage('offer', {
-      'sdp': offer.toMap(),
-    });
+    _sendSignalingMessage('offer', {'sdp': offer.toMap()});
+    _makingOffer = false;
   }
 
-  Future<void> handleOffer(Map<String, dynamic> offerData) async {
-    print('WebRTCService: Handling offer');
-    RTCSessionDescription offer = RTCSessionDescription(
-      offerData['sdp'],
-      offerData['type'],
-    );
+  // -------------------------
+  // HANDLE OFFER (CALLEE)
+  // -------------------------
+  Future<void> handleOffer(Map<String, dynamic> data) async {
+    try {
+      print('📨 handleOffer: keys=${data.keys}');
 
-    await _peerConnection?.setRemoteDescription(offer);
-    print('WebRTCService: Remote description set');
+      String sdpString;
+      String typeString;
 
-    RTCSessionDescription answer = await _peerConnection!.createAnswer();
-    await _peerConnection!.setLocalDescription(answer);
-    print('WebRTCService: Answer created and set');
+      if (data['sdp'] is Map) {
+        final sdpMap = data['sdp'] as Map<String, dynamic>;
+        sdpString = sdpMap['sdp']?.toString() ?? '';
+        typeString = sdpMap['type']?.toString() ?? 'offer';
+        print('   SDP extracted from Map');
+      } else {
+        sdpString = data['sdp']?.toString() ?? '';
+        typeString = data['type']?.toString() ?? 'offer';
+        print('   SDP is already String');
+      }
 
-    _sendSignalingMessage('answer', {
-      'sdp': answer.toMap(),
-    });
-    print('WebRTCService: Answer sent');
+      print('   SDP type: $typeString, length: ${sdpString.length}');
+
+      if (sdpString.isEmpty) {
+        throw Exception('Empty SDP received in offer');
+      }
+
+      final offer = RTCSessionDescription(sdpString, typeString);
+
+      final collision = _makingOffer ||
+          _peerConnection!.signalingState !=
+              RTCSignalingState.RTCSignalingStateStable;
+
+      if (collision) {
+        print('⚠️ Signaling collision detected, ignoring offer');
+        return;
+      }
+
+      await _peerConnection!.setRemoteDescription(offer);
+      _remoteDescriptionSet = true;
+
+      // Ajouter les ICE candidates en attente
+      for (var c in _pendingRemoteIceCandidates) {
+        await _addIceCandidate(c);
+      }
+      _pendingRemoteIceCandidates.clear();
+
+      final answer = await _peerConnection!.createAnswer(_offerConstraints);
+      await _peerConnection!.setLocalDescription(answer);
+      _sendSignalingMessage('answer', {'sdp': answer.toMap()});
+    } catch (e, stackTrace) {
+      print('❌ Error in handleOffer: $e');
+      print(stackTrace);
+      print('Data received: $data');
+      rethrow;
+    }
   }
 
-  Future<void> handleAnswer(Map<String, dynamic> answerData) async {
-    print('WebRTCService: Handling answer');
-    RTCSessionDescription answer = RTCSessionDescription(
-      answerData['sdp'],
-      answerData['type'],
-    );
+  // -------------------------
+  // HANDLE ANSWER (CALLER)
+  // -------------------------
+  Future<void> handleAnswer(Map<String, dynamic> data) async {
+    try {
+      print('📨 handleAnswer: keys=${data.keys}');
 
-    await _peerConnection?.setRemoteDescription(answer);
-    print('WebRTCService: Answer set as remote description');
-  }
+      String sdpString;
+      String typeString;
 
-  Future<void> handleIceCandidate(Map<String, dynamic> candidateData) async {
-    print('WebRTCService: Handling ICE candidate');
-    RTCIceCandidate candidate = RTCIceCandidate(
-      candidateData['candidate'],
-      candidateData['sdpMid'],
-      candidateData['sdpMLineIndex'],
-    );
+      if (data['sdp'] is Map) {
+        final sdpMap = data['sdp'] as Map<String, dynamic>;
+        sdpString = sdpMap['sdp']?.toString() ?? '';
+        typeString = sdpMap['type']?.toString() ?? 'answer';
+        print('   Answer SDP extracted from Map');
+      } else {
+        sdpString = data['sdp']?.toString() ?? '';
+        typeString = data['type']?.toString() ?? 'answer';
+        print('   Answer SDP is already String');
+      }
 
-    await _peerConnection?.addCandidate(candidate);
-    print('WebRTCService: ICE candidate added');
-  }
+      if (sdpString.isEmpty) {
+        throw Exception('Empty SDP in answer');
+      }
 
-  void _sendSignalingMessage(String type, Map<String, dynamic> data) {
-    if (_webSocketService != null && _remoteUserId != null) {
-      _webSocketService!.sendCallSignal(
-        type,
-        _remoteUserId!,
-        data,
-        _currentCallId,
+      await _peerConnection!.setRemoteDescription(
+        RTCSessionDescription(sdpString, typeString),
       );
+      _remoteDescriptionSet = true;
+
+      for (var c in _pendingRemoteIceCandidates) {
+        await _addIceCandidate(c);
+      }
+      _pendingRemoteIceCandidates.clear();
+    } catch (e) {
+      print('❌ Error in handleAnswer: $e');
+      rethrow;
     }
   }
 
-  Future<void> toggleMute() async {
-    if (_localStream != null) {
-      final audioTrack = _localStream!.getAudioTracks().first;
-      audioTrack.enabled = !audioTrack.enabled;
+  // -------------------------
+  // HANDLE ICE CANDIDATE (BOTH SIDES)
+  // -------------------------
+  Future<void> handleIceCandidate(Map<String, dynamic> data) async {
+    // selon ton backend, le candidate peut être dans data['candidate'] ou à plat
+    final candidateData = (data['candidate'] is Map)
+        ? (data['candidate'] as Map<String, dynamic>)
+        : data;
+
+    if (!_remoteDescriptionSet) {
+      print('⏳ Remote SDP not set yet → queue ICE');
+      _pendingRemoteIceCandidates.add(candidateData);
+    } else {
+      await _addIceCandidate(candidateData);
     }
+  }
+
+  Future<void> _addIceCandidate(Map<String, dynamic> data) async {
+    try {
+      final candidate = RTCIceCandidate(
+        data['candidate'],
+        data['sdpMid'],
+        data['sdpMLineIndex'],
+      );
+      await _peerConnection?.addCandidate(candidate);
+      print('✅ ICE candidate added');
+    } catch (e) {
+      print('❌ Error adding ICE candidate: $e');
+    }
+  }
+
+  // -------------------------
+  // SIGNALISATION
+  // -------------------------
+  void _sendSignalingMessage(String type, Map<String, dynamic> data) {
+    if (_remoteUserId == null || _currentCallId == null) {
+      print('⚠️ Cannot send signaling message, no remoteUserId/callId');
+      return;
+    }
+    _webSocketService?.sendCallSignal(
+      type,
+      _remoteUserId!,
+      data,
+      _currentCallId,
+    );
+  }
+
+  // -------------------------
+  // MUTE / UNMUTE MICRO
+  // -------------------------
+  Future<void> toggleMute() async {
+    if (_localStream == null) return;
+    final tracks = _localStream!.getAudioTracks();
+    if (tracks.isEmpty) return;
+
+    final current = tracks.first.enabled;
+    final newValue = !current;
+
+    for (var t in tracks) {
+      t.enabled = newValue;
+    }
+
+    print(newValue ? '🎙️ Micro activé' : '🔇 Micro désactivé');
   }
 
   bool get isMuted {
-    if (_localStream != null) {
-      final audioTrack = _localStream!.getAudioTracks().first;
-      return !audioTrack.enabled;
-    }
-    return false;
+    if (_localStream == null) return false;
+    final tracks = _localStream!.getAudioTracks();
+    if (tracks.isEmpty) return false;
+    return tracks.first.enabled == false;
   }
 
+  // -------------------------
+  // FIN D'APPEL
+  // -------------------------
   Future<void> endCall() async {
     _sendSignalingMessage('end-call', {});
     await _cleanup();
     _callStateController.add(CallState.ended);
   }
 
+  // -------------------------
+  // CLEANUP
+  // -------------------------
   Future<void> _cleanup() async {
-    try {
-      if (_localStream != null) {
-        for (var track in _localStream!.getTracks()) {
-          await track.stop();
-          track.dispose();
-        }
-        await _localStream!.dispose();
-        _localStream = null;
-      }
+    print('🧹 Cleaning up WebRTCService...');
 
-      if (_peerConnection != null) {
-        await _peerConnection!.close();
-        await _peerConnection!.dispose();
-        _peerConnection = null;
-      }
+    _iceCandidateTimer?.cancel();
 
-      _currentCallId = null;
-      _remoteUserId = null;
-    } catch (e) {
-      print('Error during cleanup: $e');
-      _localStream = null;
-      _peerConnection = null;
-      _currentCallId = null;
-      _remoteUserId = null;
+    _localStream?.getTracks().forEach((t) => t.stop());
+    await _localStream?.dispose();
+
+    await _peerConnection?.close();
+    await _peerConnection?.dispose();
+
+    _localStream = null;
+    _peerConnection = null;
+    _currentCallId = null;
+    _remoteUserId = null;
+
+    _pendingSignals.clear();
+    _pendingRemoteIceCandidates.clear();
+    _localIceCandidatesToSend.clear();
+
+    _remoteDescriptionSet = false;
+    _peerConnectionReady = false;
+    _peerConnectionReadyCompleter = null;
+
+    print('✅ WebRTCService cleanup done');
+  }
+
+  // -------------------------
+  // GESTION DES SIGNAUX ENTRANTS
+  // -------------------------
+  void _handleIncomingSignal(Map<String, dynamic> signal) async {
+    final type = signal['type'];
+    final data = (signal['data'] ?? {}) as Map<String, dynamic>;
+
+    print('📨 Incoming signal: $type');
+
+    if (!_peerConnectionReady && type != 'end-call') {
+      print('⏳ PeerConnection not ready → queue signal $type');
+      _pendingSignals.add(_PendingSignal(type, data));
+      return;
+    }
+
+    await _processSignal(type, data);
+  }
+
+  Future<void> _processSignal(String type, Map<String, dynamic> data) async {
+    switch (type) {
+      case 'offer':
+        await handleOffer(data);
+        break;
+      case 'answer':
+        await handleAnswer(data);
+        break;
+      case 'ice-candidate':
+        await handleIceCandidate(data);
+        break;
+      case 'end-call':
+        await endCall();
+        break;
+      default:
+        print('⚠️ Unknown signal type: $type');
     }
   }
 
-  // Getter pour vérifier si initialisé
-  bool get isInitialized => _isInitialized;
+  Future<void> _processPendingSignals() async {
+    if (_peerConnectionReadyCompleter != null) {
+      await _peerConnectionReadyCompleter!.future;
+    }
 
+    for (var s in List<_PendingSignal>.from(_pendingSignals)) {
+      print('📨 Processing queued signal: ${s.type}');
+      await _processSignal(s.type, s.data);
+    }
+    _pendingSignals.clear();
+  }
+
+  // -------------------------
+  // DISPOSE (service)
+  // -------------------------
   void dispose() {
     _cleanup();
     _remoteStreamController.close();
@@ -280,11 +574,10 @@ class WebRTCService {
   }
 }
 
-enum CallState {
-  idle,
-  calling,
-  ringing,
-  connected,
-  ended,
-  error,
+enum CallState { idle, calling, ringing, connected, ended, error }
+
+class _PendingSignal {
+  final String type;
+  final Map<String, dynamic> data;
+  _PendingSignal(this.type, this.data);
 }

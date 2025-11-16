@@ -4,25 +4,21 @@ import '../../models/apartment_details_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/apartment_details_service.dart';
 
-class EditApartmentSectionScreen extends StatefulWidget {
+class EditApartmentScreen extends StatefulWidget {
   final String apartmentId;
-  final String section;
   final ApartmentDetailsModel? currentData;
 
-  const EditApartmentSectionScreen({
+  const EditApartmentScreen({
     Key? key,
     required this.apartmentId,
-    required this.section,
     this.currentData,
   }) : super(key: key);
 
   @override
-  State<EditApartmentSectionScreen> createState() =>
-      _EditApartmentSectionScreenState();
+  State<EditApartmentScreen> createState() => _EditApartmentScreenState();
 }
 
-class _EditApartmentSectionScreenState
-    extends State<EditApartmentSectionScreen> {
+class _EditApartmentScreenState extends State<EditApartmentScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApartmentDetailsService _service = ApartmentDetailsService();
   bool _isLoading = false;
@@ -34,79 +30,65 @@ class _EditApartmentSectionScreenState
   @override
   void initState() {
     super.initState();
-    _initializeFields();
+    _initializeAllFields();
   }
 
-  void _initializeFields() {
-    switch (widget.section) {
-      case 'general':
-        _initController('nbChambres',
-            widget.currentData?.generalInfo?.nbChambres?.toString());
-        _initController('nbSalleBain',
-            widget.currentData?.generalInfo?.nbSalleBain?.toString());
-        _initController(
-            'surface', widget.currentData?.generalInfo?.surface?.toString());
-        _initController(
-            'etage', widget.currentData?.generalInfo?.etage?.toString());
-        break;
+  void _initializeAllFields() {
+    // Informations Générales
+    _initController('nbChambres',
+        widget.currentData?.generalInfo?.nbChambres?.toString());
+    _initController('nbSalleBain',
+        widget.currentData?.generalInfo?.nbSalleBain?.toString());
+    _initController('surface', widget.currentData?.generalInfo?.surface?.toString());
+    _initController('etage', widget.currentData?.generalInfo?.etage?.toString());
 
-      case 'interior':
-        _initController(
-            'quartierLieu', widget.currentData?.interior?.quartierLieu);
-        _initController('surfaceHabitable',
-            widget.currentData?.interior?.surfaceHabitable?.toString());
-        _initController('surfaceSalon',
-            widget.currentData?.interior?.surfaceSalon?.toString());
-        _initController('typeCuisine', widget.currentData?.interior?.typeCuisine);
-        _initController('surfaceCuisine',
-            widget.currentData?.interior?.surfaceCuisine?.toString());
-        _initController('nbSalleDouche',
-            widget.currentData?.interior?.nbSalleDouche?.toString());
-        _initController('nbToilette',
-            widget.currentData?.interior?.nbToilette?.toString());
-        _boolValues['cave'] = widget.currentData?.interior?.cave ?? false;
-        _boolValues['grenier'] = widget.currentData?.interior?.grenier ?? false;
-        break;
+    // Intérieur
+    _initController('quartierLieu', widget.currentData?.interior?.quartierLieu);
+    _initController('surfaceHabitable',
+        widget.currentData?.interior?.surfaceHabitable?.toString());
+    _initController('surfaceSalon',
+        widget.currentData?.interior?.surfaceSalon?.toString());
+    _initController('typeCuisine', widget.currentData?.interior?.typeCuisine);
+    _initController('surfaceCuisine',
+        widget.currentData?.interior?.surfaceCuisine?.toString());
+    _initController('nbSalleDouche',
+        widget.currentData?.interior?.nbSalleDouche?.toString());
+    _initController('nbToilette',
+        widget.currentData?.interior?.nbToilette?.toString());
+    _boolValues['cave'] = widget.currentData?.interior?.cave ?? false;
+    _boolValues['grenier'] = widget.currentData?.interior?.grenier ?? false;
 
-      case 'exterior':
-        _initController('surfaceTerrasse',
-            widget.currentData?.exterior?.surfaceTerrasse?.toString());
-        _orientationTerrasse =
-            widget.currentData?.exterior?.orientationTerrasse;
-        break;
+    // Extérieur
+    _initController('surfaceTerrasse',
+        widget.currentData?.exterior?.surfaceTerrasse?.toString());
+    _orientationTerrasse = widget.currentData?.exterior?.orientationTerrasse;
 
-      case 'installations':
-        _boolValues['ascenseur'] =
-            widget.currentData?.installations?.ascenseur ?? false;
-        _boolValues['accesHandicap'] =
-            widget.currentData?.installations?.accesHandicap ?? false;
-        _boolValues['parlophone'] =
-            widget.currentData?.installations?.parlophone ?? false;
-        _boolValues['interphoneVideo'] =
-            widget.currentData?.installations?.interphoneVideo ?? false;
-        _boolValues['porteBlindee'] =
-            widget.currentData?.installations?.porteBlindee ?? false;
-        _boolValues['piscine'] =
-            widget.currentData?.installations?.piscine ?? false;
-        break;
+    // Installations
+    _boolValues['ascenseur'] =
+        widget.currentData?.installations?.ascenseur ?? false;
+    _boolValues['accesHandicap'] =
+        widget.currentData?.installations?.accesHandicap ?? false;
+    _boolValues['parlophone'] =
+        widget.currentData?.installations?.parlophone ?? false;
+    _boolValues['interphoneVideo'] =
+        widget.currentData?.installations?.interphoneVideo ?? false;
+    _boolValues['porteBlindee'] =
+        widget.currentData?.installations?.porteBlindee ?? false;
+    _boolValues['piscine'] = widget.currentData?.installations?.piscine ?? false;
 
-      case 'energie':
-        _initController('classeEnergetique',
-            widget.currentData?.energie?.classeEnergetique);
-        _initController('consommationEnergiePrimaire',
-            widget.currentData?.energie?.consommationEnergiePrimaire?.toString());
-        _initController('consommationTheoriqueTotale',
-            widget.currentData?.energie?.consommationTheoriqueTotale?.toString());
-        _initController('emissionCo2',
-            widget.currentData?.energie?.emissionCo2?.toString());
-        _initController(
-            'numeroRapportPeb', widget.currentData?.energie?.numeroRapportPeb);
-        _initController(
-            'typeChauffage', widget.currentData?.energie?.typeChauffage);
-        _boolValues['doubleVitrage'] =
-            widget.currentData?.energie?.doubleVitrage ?? false;
-        break;
-    }
+    // Énergie
+    _initController('classeEnergetique',
+        widget.currentData?.energie?.classeEnergetique);
+    _initController('consommationEnergiePrimaire',
+        widget.currentData?.energie?.consommationEnergiePrimaire?.toString());
+    _initController('consommationTheoriqueTotale',
+        widget.currentData?.energie?.consommationTheoriqueTotale?.toString());
+    _initController('emissionCo2',
+        widget.currentData?.energie?.emissionCo2?.toString());
+    _initController('numeroRapportPeb', widget.currentData?.energie?.numeroRapportPeb);
+    _initController('typeChauffage', widget.currentData?.energie?.typeChauffage);
+    _boolValues['doubleVitrage'] =
+        widget.currentData?.energie?.doubleVitrage ?? false;
   }
 
   void _initController(String key, String? initialValue) {
@@ -127,7 +109,53 @@ class _EditApartmentSectionScreenState
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      final updates = _buildUpdatePayload();
+      // Construction du payload complet
+      final updates = {
+        'generalInfo': {
+          'nbChambres': _parseIntOrNull(_controllers['nbChambres']?.text),
+          'nbSalleBain': _parseIntOrNull(_controllers['nbSalleBain']?.text),
+          'surface': _parseDoubleOrNull(_controllers['surface']?.text),
+          'etage': _parseIntOrNull(_controllers['etage']?.text),
+        },
+        'interior': {
+          'quartierLieu': _controllers['quartierLieu']?.text,
+          'surfaceHabitable':
+          _parseDoubleOrNull(_controllers['surfaceHabitable']?.text),
+          'surfaceSalon': _parseDoubleOrNull(_controllers['surfaceSalon']?.text),
+          'typeCuisine': _controllers['typeCuisine']?.text,
+          'surfaceCuisine':
+          _parseDoubleOrNull(_controllers['surfaceCuisine']?.text),
+          'surfaceChambres': [],
+          'nbSalleDouche': _parseIntOrNull(_controllers['nbSalleDouche']?.text),
+          'nbToilette': _parseIntOrNull(_controllers['nbToilette']?.text),
+          'cave': _boolValues['cave'],
+          'grenier': _boolValues['grenier'],
+        },
+        'exterior': {
+          'surfaceTerrasse':
+          _parseDoubleOrNull(_controllers['surfaceTerrasse']?.text),
+          'orientationTerrasse': _orientationTerrasse,
+        },
+        'installations': {
+          'ascenseur': _boolValues['ascenseur'],
+          'accesHandicap': _boolValues['accesHandicap'],
+          'parlophone': _boolValues['parlophone'],
+          'interphoneVideo': _boolValues['interphoneVideo'],
+          'porteBlindee': _boolValues['porteBlindee'],
+          'piscine': _boolValues['piscine'],
+        },
+        'energie': {
+          'classeEnergetique': _controllers['classeEnergetique']?.text,
+          'consommationEnergiePrimaire': _parseDoubleOrNull(
+              _controllers['consommationEnergiePrimaire']?.text),
+          'consommationTheoriqueTotale': _parseDoubleOrNull(
+              _controllers['consommationTheoriqueTotale']?.text),
+          'emissionCo2': _parseDoubleOrNull(_controllers['emissionCo2']?.text),
+          'numeroRapportPeb': _controllers['numeroRapportPeb']?.text,
+          'typeChauffage': _controllers['typeChauffage']?.text,
+          'doubleVitrage': _boolValues['doubleVitrage'],
+        },
+      };
 
       await _service.updateApartmentDetails(
         widget.apartmentId,
@@ -150,75 +178,6 @@ class _EditApartmentSectionScreenState
     }
   }
 
-  Map<String, dynamic> _buildUpdatePayload() {
-    Map<String, dynamic> payload = {};
-
-    switch (widget.section) {
-      case 'general':
-        payload['generalInfo'] = {
-          'nbChambres': _parseIntOrNull(_controllers['nbChambres']?.text),
-          'nbSalleBain': _parseIntOrNull(_controllers['nbSalleBain']?.text),
-          'surface': _parseDoubleOrNull(_controllers['surface']?.text),
-          'etage': _parseIntOrNull(_controllers['etage']?.text),
-        };
-        break;
-
-      case 'interior':
-        payload['interior'] = {
-          'quartierLieu': _controllers['quartierLieu']?.text,
-          'surfaceHabitable':
-              _parseDoubleOrNull(_controllers['surfaceHabitable']?.text),
-          'surfaceSalon':
-              _parseDoubleOrNull(_controllers['surfaceSalon']?.text),
-          'typeCuisine': _controllers['typeCuisine']?.text,
-          'surfaceCuisine':
-              _parseDoubleOrNull(_controllers['surfaceCuisine']?.text),
-          'surfaceChambres': [],
-          'nbSalleDouche':
-              _parseIntOrNull(_controllers['nbSalleDouche']?.text),
-          'nbToilette': _parseIntOrNull(_controllers['nbToilette']?.text),
-          'cave': _boolValues['cave'],
-          'grenier': _boolValues['grenier'],
-        };
-        break;
-
-      case 'exterior':
-        payload['exterior'] = {
-          'surfaceTerrasse':
-              _parseDoubleOrNull(_controllers['surfaceTerrasse']?.text),
-          'orientationTerrasse': _orientationTerrasse,
-        };
-        break;
-
-      case 'installations':
-        payload['installations'] = {
-          'ascenseur': _boolValues['ascenseur'],
-          'accesHandicap': _boolValues['accesHandicap'],
-          'parlophone': _boolValues['parlophone'],
-          'interphoneVideo': _boolValues['interphoneVideo'],
-          'porteBlindee': _boolValues['porteBlindee'],
-          'piscine': _boolValues['piscine'],
-        };
-        break;
-
-      case 'energie':
-        payload['energie'] = {
-          'classeEnergetique': _controllers['classeEnergetique']?.text,
-          'consommationEnergiePrimaire': _parseDoubleOrNull(
-              _controllers['consommationEnergiePrimaire']?.text),
-          'consommationTheoriqueTotale': _parseDoubleOrNull(
-              _controllers['consommationTheoriqueTotale']?.text),
-          'emissionCo2': _parseDoubleOrNull(_controllers['emissionCo2']?.text),
-          'numeroRapportPeb': _controllers['numeroRapportPeb']?.text,
-          'typeChauffage': _controllers['typeChauffage']?.text,
-          'doubleVitrage': _boolValues['doubleVitrage'],
-        };
-        break;
-    }
-
-    return payload;
-  }
-
   int? _parseIntOrNull(String? value) {
     if (value == null || value.isEmpty) return null;
     return int.tryParse(value);
@@ -233,7 +192,7 @@ class _EditApartmentSectionScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getSectionTitle()),
+        title: const Text('Modifier l\'appartement'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         actions: [
@@ -255,6 +214,7 @@ class _EditApartmentSectionScreenState
             IconButton(
               icon: const Icon(Icons.check),
               onPressed: _saveChanges,
+              tooltip: 'Enregistrer',
             ),
         ],
       ),
@@ -262,44 +222,50 @@ class _EditApartmentSectionScreenState
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
-          children: _buildFormFields(),
+          children: [
+            _buildSectionHeader('Informations Générales', Icons.info_outline),
+            ..._buildGeneralFields(),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Intérieur', Icons.home),
+            ..._buildInteriorFields(),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Extérieur', Icons.deck),
+            ..._buildExteriorFields(),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Installations', Icons.build),
+            ..._buildInstallationsFields(),
+            const SizedBox(height: 24),
+
+            _buildSectionHeader('Énergie', Icons.bolt),
+            ..._buildEnergieFields(),
+            const SizedBox(height: 24),
+          ],
         ),
       ),
     );
   }
 
-  String _getSectionTitle() {
-    switch (widget.section) {
-      case 'general':
-        return 'Informations Générales';
-      case 'interior':
-        return 'Intérieur';
-      case 'exterior':
-        return 'Extérieur';
-      case 'installations':
-        return 'Installations';
-      case 'energie':
-        return 'Énergie';
-      default:
-        return 'Modifier';
-    }
-  }
-
-  List<Widget> _buildFormFields() {
-    switch (widget.section) {
-      case 'general':
-        return _buildGeneralFields();
-      case 'interior':
-        return _buildInteriorFields();
-      case 'exterior':
-        return _buildExteriorFields();
-      case 'installations':
-        return _buildInstallationsFields();
-      case 'energie':
-        return _buildEnergieFields();
-      default:
-        return [];
-    }
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.blue, size: 24),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   List<Widget> _buildGeneralFields() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mgi/widgets/itsme_button.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
@@ -185,7 +186,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: 30),
-                
+                ItsmeButton(
+                  onPressed: () {
+                    // TODO: implémenter l'intégration itsme ici
+                    print("Connexion via itsme");
+                  },
+                ),
+                const SizedBox(height: 20),
+
                 // Forgot Password
                 TextButton(
                   onPressed: () {
@@ -195,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 
                 const SizedBox(height: 20),
-                
+
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

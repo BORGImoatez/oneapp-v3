@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:provider/provider.dart';
 import '../../models/call_model.dart';
 import '../../services/webrtc_service.dart';
@@ -26,29 +27,79 @@ class ActiveCallScreen extends StatefulWidget {
 class _ActiveCallScreenState extends State<ActiveCallScreen> {
   final CallService _callService = CallService();
   bool _isMuted = false;
+  bool _isSpeakerOn = false;
   int _callDuration = 0;
   Timer? _timer;
-  StreamSubscription? _callStateSubscription;
+  StreamSubscription<CallState>? _callStateSubscription;
+
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
 
   @override
   void initState() {
     super.initState();
+    _initRenderers();
     _startTimer();
     _listenToCallState();
+    _listenToRemoteStream();
+    _initializeMicrophone();
+
+  }
+  Future<void> _initializeMicrophone() async {
+    try {
+      // Attendre un peu pour que le stream soit bien initialisé
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Synchroniser l'état avec le service
+      setState(() {
+        _isMuted = widget.webrtcService.isMuted;
+      });
+
+      // Si le micro est muted, le démuter
+      if (_isMuted) {
+        await widget.webrtcService.toggleMute();
+        setState(() {
+          _isMuted = false;
+        });
+      }
+
+      print('🎤 Microphone initialisé et activé');
+    } catch (e) {
+      print('❌ Erreur initialisation micro: $e');
+    }
+  }
+  Future<void> _initRenderers() async {
+    await _remoteRenderer.initialize();
   }
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _callDuration++;
-      });
+      if (mounted) {
+        setState(() {
+          _callDuration++;
+        });
+      }
     });
   }
 
   void _listenToCallState() {
     _callStateSubscription = widget.webrtcService.callState.listen((state) {
-      if (state == CallState.ended) {
+      if (!mounted) return;
+
+      print('📱 Call state changed: $state');
+
+      if (state == CallState.ended || state == CallState.error) {
         _endCall();
+      }
+    });
+  }
+
+  void _listenToRemoteStream() {
+    widget.webrtcService.remoteStream.listen((stream) {
+      if (mounted) {
+        setState(() {
+          _remoteRenderer.srcObject = stream;
+        });
+        print('🎵 Remote stream set to renderer');
       }
     });
   }
@@ -59,11 +110,17 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  /// 🔇 Active / désactive le micro pendant l'appel
   Future<void> _toggleMute() async {
-    await widget.webrtcService.toggleMute();
-    setState(() {
-      _isMuted = widget.webrtcService.isMuted;
-    });
+    try {
+      await widget.webrtcService.toggleMute();
+      setState(() {
+        _isMuted = widget.webrtcService.isMuted;
+      });
+      print(_isMuted ? '🔇 Micro désactivé' : '🎙️ Micro activé');
+    } catch (e) {
+      print('❌ Erreur lors du mute: $e');
+    }
   }
 
   Future<void> _endCall() async {
@@ -78,7 +135,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      print('Error ending call: $e');
+      print('❌ Erreur fin d\'appel: $e');
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -89,6 +146,7 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
   void dispose() {
     _timer?.cancel();
     _callStateSubscription?.cancel();
+    _remoteRenderer.dispose();
     super.dispose();
   }
 
@@ -163,10 +221,12 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
                     iconSize: 36,
                   ),
                   _buildControlButton(
-                    icon: Icons.volume_up,
+                    icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
                     label: 'Haut-parleur',
-                    onTap: () {},
-                    backgroundColor: Colors.white.withOpacity(0.1),
+                    onTap: _toggleSpeaker,
+                    backgroundColor: _isSpeakerOn
+                        ? Colors.white.withOpacity(0.2)
+                        : Colors.white.withOpacity(0.1),
                   ),
                 ],
               ),
@@ -176,6 +236,22 @@ class _ActiveCallScreenState extends State<ActiveCallScreen> {
         ),
       ),
     );
+  }
+
+  /// 🔈 Active / désactive le haut-parleur
+  Future<void> _toggleSpeaker() async {
+    try {
+      final newSpeakerState = !_isSpeakerOn;
+      await Helper.setSpeakerphoneOn(newSpeakerState);
+
+      setState(() {
+        _isSpeakerOn = newSpeakerState;
+      });
+
+      print(_isSpeakerOn ? '🔊 Haut-parleur activé' : '🎧 Haut-parleur désactivé');
+    } catch (e) {
+      print('❌ Erreur haut-parleur: $e');
+    }
   }
 
   Widget _buildControlButton({

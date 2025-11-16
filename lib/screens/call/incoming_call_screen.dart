@@ -27,7 +27,17 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
   final CallService _callService = CallService();
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+
   bool _isVibrating = false;
+
+  /// 🔥 FIX : on stocke le provider ici
+  CallProvider? _callProvider;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _callProvider = Provider.of<CallProvider>(context, listen: false);
+  }
 
   @override
   void initState() {
@@ -66,21 +76,32 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       await Vibration.cancel();
       _isVibrating = false;
     }
-    // Stopper la sonnerie du CallProvider
-    final callProvider = Provider.of<CallProvider>(context, listen: false);
-    await callProvider.stopRingtone();
+
+    /// 🔥 FIX : on utilise _callProvider déjà stocké → SAFE
+    await _callProvider?.stopRingtone();
   }
 
   Future<void> _answerCall() async {
     try {
       await _stopRinging();
 
-      // Notifier le serveur qu'on répond
       await _callService.answerCall(widget.call.id!);
 
-      // Préparer le PeerConnection (ne crée pas l'offre, attend de la recevoir)
+      String channelId;
+
+      if (widget.call.channelId is Map) {
+        final channelData = widget.call.channelId as Map<String, dynamic>;
+        channelId = channelData['id']?.toString() ?? '';
+      } else {
+        channelId = widget.call.channelId.toString();
+      }
+
+      if (channelId.isEmpty) {
+        throw Exception('Invalid channelId');
+      }
+
       await widget.webrtcService.answerCall(
-        widget.call.channelId.toString(),
+        channelId,
         widget.call.callerId,
       );
 
@@ -95,11 +116,13 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('Error in _answerCall: $e');
+      print(stackTrace);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors de la réponse à l\'appel')),
+          SnackBar(content: Text('Erreur: $e')),
         );
         Navigator.of(context).pop();
       }
@@ -110,18 +133,16 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     try {
       await _stopRinging();
       await _callService.rejectCall(widget.call.id!);
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+
+      if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
   @override
   void dispose() {
+    /// 🔥 FIX : maintenant ça ne crash plus
     _stopRinging();
     _animationController.dispose();
     super.dispose();

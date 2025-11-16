@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 
-class QuickAccessCard extends StatelessWidget {
+class QuickAccessCard extends StatefulWidget {
   final String title;
   final String subtitle;
   final IconData icon;
@@ -20,90 +20,136 @@ class QuickAccessCard extends StatelessWidget {
   });
 
   @override
+  State<QuickAccessCard> createState() => _QuickAccessCardState();
+}
+
+class _QuickAccessCardState extends State<QuickAccessCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 360;
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(isSmallScreen ? 12.0 : 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: widget.onTap,
+            onTapDown: (_) => _scaleController.forward(),
+            onTapUp: (_) => _scaleController.reverse(),
+            onTapCancel: () => _scaleController.reverse(),
+            borderRadius: BorderRadius.circular(16),
+            splashColor: widget.color.withOpacity(0.1),
+            highlightColor: widget.color.withOpacity(0.05),
+            child: Container(
+              padding: EdgeInsets.all(isSmallScreen ? 12.0 : 14.0),
+              child: Row(
                 children: [
+                  // Icon container
                   Container(
-                    width: isSmallScreen ? 32 : 40,
-                    height: isSmallScreen ? 32 : 40,
+                    width: isSmallScreen ? 40 : 44,
+                    height: isSmallScreen ? 40 : 44,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      color: widget.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      icon,
-                      color: color,
-                      size: isSmallScreen ? 16 : 20,
+                      widget.icon,
+                      color: widget.color,
+                      size: isSmallScreen ? 20 : 22,
                     ),
                   ),
-                  if (badge != null && badge! > 0)
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor,
-                          borderRadius: BorderRadius.circular(10),
+                  const SizedBox(width: 12),
+                  // Text content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.title,
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 13 : 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (widget.badge != null && widget.badge! > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.errorColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  widget.badge! > 99 ? '99+' : '${widget.badge}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        child: Text(
-                          badge! > 99 ? '99+' : '$badge',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.subtitle,
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 11 : 12,
+                            color: AppTheme.textSecondary,
                           ),
-                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ],
                     ),
+                  ),
                 ],
               ),
-              SizedBox(height: isSmallScreen ? 8 : 12),
-              Flexible(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 12 : 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Flexible(
-                child: Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 10 : 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

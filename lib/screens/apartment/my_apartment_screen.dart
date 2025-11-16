@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mgi/screens/apartment/edit_apartment_section_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/apartment_details_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/apartment_details_service.dart';
-import 'edit_apartment_section_screen.dart';
 
 class MyApartmentScreen extends StatefulWidget {
   final String apartmentId;
@@ -26,31 +26,29 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
   ApartmentDetailsModel? _details;
   bool _isLoading = true;
   int _currentPhotoIndex = 0;
-  bool _hasLoadedOnce = false; // Add this flag
+  bool _hasLoadedOnce = false;
+  bool _isGeneralInfoExpanded = true; // Section ouverte par défaut
 
   @override
   void initState() {
     super.initState();
-    // Don't call _loadDetails() here
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Load details only once when dependencies are ready
     if (!_hasLoadedOnce) {
       _hasLoadedOnce = true;
       _loadDetails();
     }
   }
+
   Future<void> _loadDetails() async {
     setState(() => _isLoading = true);
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-
-      final details =
-      await _service.getApartmentDetails(widget.apartmentId);
+      final details = await _service.getApartmentDetails(widget.apartmentId);
       setState(() {
         _details = details;
         _isLoading = false;
@@ -64,6 +62,7 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
       }
     }
   }
+
   Future<void> _pickAndUploadImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -77,7 +76,6 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -86,7 +84,7 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
 
       await _service.uploadPhoto(
         widget.apartmentId,
-         File(image.path),
+        File(image.path),
       );
 
       Navigator.pop(context);
@@ -161,7 +159,6 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-
       await _service.deletePhoto(photoId);
       await _loadDetails();
 
@@ -179,6 +176,22 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
     }
   }
 
+  void _navigateToEdit() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditApartmentScreen(
+          apartmentId: widget.apartmentId,
+          currentData: _details,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      _loadDetails();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -186,23 +199,30 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
         title: const Text('Mon Appartement'),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: _navigateToEdit,
+            tooltip: 'Modifier',
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _details == null
-              ? const Center(child: Text('Aucune donnée disponible'))
-              : RefreshIndicator(
-                  onRefresh: _loadDetails,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: Column(
-                      children: [
-                        _buildPhotoCarousel(),
-                        _buildAccordionSections(),
-                      ],
-                    ),
-                  ),
-                ),
+          ? const Center(child: Text('Aucune donnée disponible'))
+          : RefreshIndicator(
+        onRefresh: _loadDetails,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              _buildPhotoCarousel(),
+              _buildAccordionSections(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -243,9 +263,9 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
                       imageUrl: photo.photoUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) =>
-                          const Center(child: CircularProgressIndicator()),
+                      const Center(child: CircularProgressIndicator()),
                       errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                      const Icon(Icons.error),
                     ),
                     Positioned(
                       top: 8,
@@ -305,31 +325,31 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
           title: 'Informations Générales',
           icon: Icons.info_outline,
           content: _buildGeneralInfoContent(),
-          section: 'general',
+          isInitiallyExpanded: true,
         ),
         _buildAccordionTile(
           title: 'Intérieur',
           icon: Icons.home,
           content: _buildInteriorContent(),
-          section: 'interior',
+          isInitiallyExpanded: false,
         ),
         _buildAccordionTile(
           title: 'Extérieur',
           icon: Icons.deck,
           content: _buildExteriorContent(),
-          section: 'exterior',
+          isInitiallyExpanded: false,
         ),
         _buildAccordionTile(
           title: 'Installations',
           icon: Icons.build,
           content: _buildInstallationsContent(),
-          section: 'installations',
+          isInitiallyExpanded: false,
         ),
         _buildAccordionTile(
           title: 'Énergie',
           icon: Icons.bolt,
           content: _buildEnergieContent(),
-          section: 'energie',
+          isInitiallyExpanded: false,
         ),
       ],
     );
@@ -339,11 +359,12 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
     required String title,
     required IconData icon,
     required Widget content,
-    required String section,
+    required bool isInitiallyExpanded,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ExpansionTile(
+        initiallyExpanded: isInitiallyExpanded,
         leading: Icon(icon, color: Colors.blue),
         title: Text(
           title,
@@ -351,16 +372,6 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 20),
-              onPressed: () => _navigateToEdit(section),
-            ),
-            const Icon(Icons.expand_more),
-          ],
         ),
         children: [
           Padding(
@@ -370,23 +381,6 @@ class _MyApartmentScreenState extends State<MyApartmentScreen> {
         ],
       ),
     );
-  }
-
-  void _navigateToEdit(String section) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditApartmentSectionScreen(
-          apartmentId: widget.apartmentId,
-          section: section,
-          currentData: _details,
-        ),
-      ),
-    );
-
-    if (result == true) {
-      _loadDetails();
-    }
   }
 
   Widget _buildGeneralInfoContent() {
